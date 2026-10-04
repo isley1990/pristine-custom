@@ -65,7 +65,7 @@ export function CartDrawer() {
             <div className="pc-drawer__foot">
               <p className="pc-drawer__sub"><span>Subtotal</span><strong>{formatPrice(subtotal)}</strong></p>
               <p className="pc-drawer__note">
-                {unpriced > 0 ? `${unpriced} item${unpriced === 1 ? "" : "s"} priced on your quote. ` : ""}
+                {unpriced > 0 ? `${unpriced} item${unpriced === 1 ? "" : "s"} without a listed price — we price it on your quote. ` : ""}
                 Before shipping and tax. We confirm fitment and availability before any charge.
               </p>
               <CheckoutQuote onGo={() => setOpen(false)} />

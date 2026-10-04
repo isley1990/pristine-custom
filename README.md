@@ -15,7 +15,7 @@ Stack: TanStack Start (React 19, SSR) + Nitro, deployed on Vercel. Data in Supab
 
 ## Database
 
-Run `supabase/migrations/0001_pristine_tables.sql` once in the Supabase SQL editor (already applied on the current project).
+Supabase project `pristine-custom`. Schema in `supabase/migrations/`. Product photos live in the public Storage bucket `pristine-products`. Visit `/healthz` to check the database settings.
 
 ## Local development
 

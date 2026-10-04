@@ -61,7 +61,7 @@ export const categoryById = (id: string) => categories.find((c) => c.id === id);
 
 /** Public base for product photos in Supabase Storage (public bucket). */
 export const PRODUCT_IMG_BASE =
-  "https://nhikynfosbyqlvixqizz.supabase.co/storage/v1/object/public/pristine-products/";
+  "https://mnbrlgjwovqdcaacqsvy.supabase.co/storage/v1/object/public/pristine-products/";
 
 export function productImage(path: string | null | undefined, category: string): string {
   if (path) return path.startsWith("http") ? path : PRODUCT_IMG_BASE + path;

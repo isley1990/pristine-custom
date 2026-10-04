@@ -14,6 +14,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as ContactRouteImport } from './routes/contact'
+import { Route as HealthzRouteImport } from './routes/healthz'
 import { Route as HowToRouteImport } from './routes/how-to'
 import { Route as LlmsDottxtRouteImport } from './routes/llms[.]txt'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
@@ -46,6 +47,11 @@ const AdminRoute = AdminRouteImport.update({
 const ContactRoute = ContactRouteImport.update({
   id: '/contact',
   path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HealthzRoute = HealthzRouteImport.update({
+  id: '/healthz',
+  path: '/healthz',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HowToRoute = HowToRouteImport.update({
@@ -95,6 +101,7 @@ export interface FileRoutesByFullPath {
   '/account': typeof AccountRoute
   '/admin': typeof AdminRoute
   '/contact': typeof ContactRoute
+  '/healthz': typeof HealthzRoute
   '/how-to': typeof HowToRoute
   '/llms.txt': typeof LlmsDottxtRoute
   '/robots.txt': typeof RobotsDottxtRoute
@@ -110,6 +117,7 @@ export interface FileRoutesByTo {
   '/account': typeof AccountRoute
   '/admin': typeof AdminRoute
   '/contact': typeof ContactRoute
+  '/healthz': typeof HealthzRoute
   '/how-to': typeof HowToRoute
   '/llms.txt': typeof LlmsDottxtRoute
   '/robots.txt': typeof RobotsDottxtRoute
@@ -126,6 +134,7 @@ export interface FileRoutesById {
   '/account': typeof AccountRoute
   '/admin': typeof AdminRoute
   '/contact': typeof ContactRoute
+  '/healthz': typeof HealthzRoute
   '/how-to': typeof HowToRoute
   '/llms.txt': typeof LlmsDottxtRoute
   '/robots.txt': typeof RobotsDottxtRoute
@@ -143,6 +152,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/admin'
     | '/contact'
+    | '/healthz'
     | '/how-to'
     | '/llms.txt'
     | '/robots.txt'
@@ -158,6 +168,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/admin'
     | '/contact'
+    | '/healthz'
     | '/how-to'
     | '/llms.txt'
     | '/robots.txt'
@@ -173,6 +184,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/admin'
     | '/contact'
+    | '/healthz'
     | '/how-to'
     | '/llms.txt'
     | '/robots.txt'
@@ -189,6 +201,7 @@ export interface RootRouteChildren {
   AccountRoute: typeof AccountRoute
   AdminRoute: typeof AdminRoute
   ContactRoute: typeof ContactRoute
+  HealthzRoute: typeof HealthzRoute
   HowToRoute: typeof HowToRoute
   LlmsDottxtRoute: typeof LlmsDottxtRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
@@ -234,6 +247,13 @@ declare module '@tanstack/react-router' {
       path: '/contact'
       fullPath: '/contact'
       preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/healthz': {
+      id: '/healthz'
+      path: '/healthz'
+      fullPath: '/healthz'
+      preLoaderRoute: typeof HealthzRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/how-to': {
@@ -301,6 +321,7 @@ const rootRouteChildren: RootRouteChildren = {
   AccountRoute: AccountRoute,
   AdminRoute: AdminRoute,
   ContactRoute: ContactRoute,
+  HealthzRoute: HealthzRoute,
   HowToRoute: HowToRoute,
   LlmsDottxtRoute: LlmsDottxtRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,

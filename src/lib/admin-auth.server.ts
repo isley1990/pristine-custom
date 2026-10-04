@@ -13,12 +13,12 @@ function safeEqual(a: string, b: string) {
 }
 
 export function adminKey(): string | null {
-  return process.env.ADMIN_KEY || null;
+  return process.env.ADMIN_KEY?.trim() || null;
 }
 
 export function checkPassword(input: string): boolean {
   const key = adminKey();
-  return !!key && safeEqual(sign(input, "pc-pw"), sign(key, "pc-pw"));
+  return !!key && safeEqual(sign(input.trim(), "pc-pw"), sign(key, "pc-pw"));
 }
 
 export function startSession() {

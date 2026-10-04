@@ -2,10 +2,17 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 
 import { PageShell } from "@/components/site/page-shell";
+import { breadcrumbJsonLd, pageHead } from "@/lib/site";
 import { submitContact } from "@/lib/api/quote.functions";
 
 export const Route = createFileRoute("/contact")({
-  head: () => ({ meta: [{ title: "Contact Us | Pristine Custom" }, { name: "description", content: "Send Pristine Custom a question about an order, fitment or a return." }] }),
+  head: () =>
+    pageHead({
+      title: "Contact Us",
+      description: "Questions about a trailer part, fitment or a return? Send Pristine Custom a message and we reply by phone or email.",
+      path: "/contact",
+      jsonLd: [breadcrumbJsonLd([{ name: "Home", path: "/" }, { name: "Contact Us", path: "/contact" }])],
+    }),
   component: Contact,
 });
 

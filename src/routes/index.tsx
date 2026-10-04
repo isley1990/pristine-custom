@@ -3,12 +3,26 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ScrollScrub, type ScrollScrubScene } from "@/components/scroll-scrub/scroll-scrub";
 import { CatalogSection } from "@/components/site/catalog-section";
 import { BrowseButton, ClosingQuoteButton, HeroQuoteButton } from "@/components/site/ctas";
+import { FaqSection, faqJsonLd } from "@/components/site/faq-section";
 import { FitmentGuide } from "@/components/site/fitment-guide";
 import { QuoteSection } from "@/components/site/quote-section";
 import { ValueRail } from "@/components/site/value-rail";
+import { getCategoryCounts, getFeatured } from "@/lib/api/products.functions";
+import { orgJsonLd, pageHead, SITE, websiteJsonLd } from "@/lib/site";
 import { scrollScrubScenes, scrollScrubTheme } from "@/scroll-scrub-scenes";
 
 export const Route = createFileRoute("/")({
+  loader: async () => {
+    const [counts, featured] = await Promise.all([getCategoryCounts(), getFeatured()]);
+    return { counts: counts.counts, featured: featured.items };
+  },
+  head: () =>
+    pageHead({
+      title: "Pristine Custom Wheels & Trailer Parts | Trailer Wheels, Tires, Axles & Parts",
+      description: SITE.description,
+      path: "/",
+      jsonLd: [orgJsonLd(), websiteJsonLd(), faqJsonLd()],
+    }),
   component: Index,
 });
 
@@ -32,14 +46,16 @@ const scenes: ScrollScrubScene[] = scrollScrubScenes.map((scene, index) => {
 });
 
 function Index() {
+  const { counts, featured } = Route.useLoaderData();
   return (
     <main className="pc-page">
       <ScrollScrub scenes={scenes} theme={scrollScrubTheme} />
       <div className="pc-after">
-        <CatalogSection />
+        <CatalogSection counts={counts} featured={featured} />
         <ValueRail />
         <FitmentGuide />
         <QuoteSection />
+        <FaqSection />
       </div>
     </main>
   );

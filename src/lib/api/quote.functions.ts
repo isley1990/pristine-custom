@@ -71,29 +71,6 @@ export const submitQuote = createServerFn({ method: "POST" })
     return { ok: true as const, id: (row?.id as number | undefined) ?? null };
   });
 
-function isAdmin(key: string): "unconfigured" | "denied" | "ok" {
-  const expected = process.env.ADMIN_KEY;
-  if (!expected) return "unconfigured";
-  return key === expected ? "ok" : "denied";
-}
-
-export const listQuotes = createServerFn({ method: "POST" })
-  .validator(z.object({ key: z.string().min(1).max(200) }))
-  .handler(async ({ data }) => {
-    const status = isAdmin(data.key);
-    if (status !== "ok") return { status, rows: [] as QuoteRow[] };
-    const { data: rows, error } = await db()
-      .from(QUOTES)
-      .select("id, created_at, name, phone, email, category, items, details")
-      .order("id", { ascending: false })
-      .limit(200);
-    if (error) throw new Error("Could not load requests.");
-    return {
-      status,
-      rows: (rows ?? []).map((r) => ({ ...toRow(r), created_at: fmtDate(String(r.created_at)) })),
-    };
-  });
-
 const contactInput = z.object({
   name: z.string().trim().min(2).max(120),
   email: z.string().trim().max(160).optional().default(""),
@@ -147,17 +124,4 @@ export const trackRequest = createServerFn({ method: "POST" })
         details: r.details,
       },
     };
-  });
-
-export const listMessages = createServerFn({ method: "POST" })
-  .validator(z.object({ key: z.string().min(1).max(200) }))
-  .handler(async ({ data }) => {
-    if (isAdmin(data.key) !== "ok") return { rows: [] as ContactRow[] };
-    const { data: rows, error } = await db()
-      .from(MESSAGES)
-      .select("id, created_at, name, email, phone, topic, message")
-      .order("id", { ascending: false })
-      .limit(200);
-    if (error) return { rows: [] as ContactRow[] };
-    return { rows: (rows ?? []).map((r) => ({ ...(r as ContactRow), created_at: fmtDate(String(r.created_at)) })) };
   });

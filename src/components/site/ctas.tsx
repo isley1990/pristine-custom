@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import type { CatalogProduct } from "@/lib/catalog";
+import type { ProductCard } from "@/lib/api/products.functions";
 
 import { useCart } from "./cart-context";
 import { ArrowRight, Check, Plus } from "./icons";
@@ -45,7 +45,7 @@ export function FitmentLink() {
 }
 
 /** AddToCart: flips to a confirmation state for a moment after each add. */
-export function AddToCart({ product, compact = false }: { product: CatalogProduct; compact?: boolean }) {
+export function AddToCart({ product, compact = false }: { product: ProductCard; compact?: boolean }) {
   const { add } = useCart();
   const [done, setDone] = useState(false);
   useEffect(() => {

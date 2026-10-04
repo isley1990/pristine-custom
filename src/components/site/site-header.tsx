@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
-import { formatPrice, openCatalog, searchProducts } from "@/lib/catalog";
+import { useNavigate } from "@tanstack/react-router";
+
+import { quickSearch, type ProductCard } from "@/lib/api/products.functions";
+import { formatPrice } from "@/lib/categories";
 
 import { useCart } from "./cart-context";
 import { AddToCart } from "./ctas";
@@ -14,18 +17,45 @@ const MENU = [
 ];
 
 function SearchBox() {
+  const navigate = useNavigate();
   const [q, setQ] = useState("");
   const [focus, setFocus] = useState(false);
+  const [results, setResults] = useState<ProductCard[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
   const blurTimer = useRef<number | undefined>(undefined);
   const trimmed = q.trim();
-  const results = trimmed.length >= 2 ? searchProducts(trimmed) : [];
   const showDrop = focus && trimmed.length >= 2;
+
+  useEffect(() => {
+    if (trimmed.length < 2) {
+      setResults([]);
+      setTotal(0);
+      return;
+    }
+    let live = true;
+    setLoading(true);
+    const t = window.setTimeout(() => {
+      quickSearch({ data: { q: trimmed } })
+        .then((r) => {
+          if (!live) return;
+          setResults(r.items);
+          setTotal(r.total);
+        })
+        .catch(() => live && setResults([]))
+        .finally(() => live && setLoading(false));
+    }, 220);
+    return () => {
+      live = false;
+      window.clearTimeout(t);
+    };
+  }, [trimmed]);
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (!trimmed) return;
     setFocus(false);
-    openCatalog({ q: trimmed, category: "all" });
+    void navigate({ to: "/shop", search: { q: trimmed } });
   };
 
   return (
@@ -44,6 +74,7 @@ function SearchBox() {
       <label className="pc-sr" htmlFor="part-lookup">Part number lookup</label>
       <input
         autoComplete="off"
+        enterKeyHint="search"
         id="part-lookup"
         onChange={(e) => setQ(e.target.value)}
         placeholder="Part # lookup"
@@ -54,25 +85,29 @@ function SearchBox() {
         <SearchIcon />
       </button>
       {showDrop ? (
-        <div className="pc-search__drop pc-glass">
-          {results.length === 0 ? (
-            <p className="pc-search__empty">No parts match "{trimmed}". Try a part number like PC-W1506.</p>
+        <div className="pc-search__drop pc-glass" aria-live="polite">
+          {loading && results.length === 0 ? (
+            <p className="pc-search__empty">Searching…</p>
+          ) : results.length === 0 ? (
+            <p className="pc-search__empty">No parts match "{trimmed}". Try a part number like 24476 or a size like ST205/75R15.</p>
           ) : (
             <>
               <ul>
-                {results.slice(0, 6).map((p) => (
-                  <li key={p.sku}>
+                {results.map((p) => (
+                  <li key={p.partNumber}>
                     <img alt="" height={44} loading="lazy" src={p.image} width={44} />
-                    <div className="pc-search__meta">
+                    <a className="pc-search__meta" href={`/product/${p.slug}`}>
                       <p className="pc-search__name">{p.name}</p>
-                      <p className="pc-search__sku">{p.sku} · {formatPrice(p.price)}</p>
-                    </div>
+                      <p className="pc-search__sku">
+                        #{p.partNumber} · {p.price == null ? "Call for price" : formatPrice(p.price)}
+                      </p>
+                    </a>
                     <AddToCart compact product={p} />
                   </li>
                 ))}
               </ul>
               <button className="pc-search__all" type="submit">
-                See all {results.length} result{results.length === 1 ? "" : "s"}
+                See all {total} result{total === 1 ? "" : "s"}
               </button>
             </>
           )}
@@ -125,7 +160,7 @@ export function SiteHeader() {
           <nav aria-label="Main" className="pc-menu" data-open={menuOpen ? "true" : undefined}>
             <ul>
               <li>
-                <a className="pc-menu__shop" href="/#catalog" onClick={() => setMenuOpen(false)}>
+                <a className="pc-menu__shop" href="/shop" onClick={() => setMenuOpen(false)}>
                   Shop Parts
                 </a>
               </li>

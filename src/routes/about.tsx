@@ -1,9 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { PageShell } from "@/components/site/page-shell";
+import { breadcrumbJsonLd, pageHead } from "@/lib/site";
 
 export const Route = createFileRoute("/about")({
-  head: () => ({ meta: [{ title: "About Us | Pristine Custom" }, { name: "description", content: "Who we are and how we work at Pristine Custom Wheels and Trailer Parts." }] }),
+  head: () =>
+    pageHead({
+      title: "About Us",
+      description: "Pristine Custom sells custom trailer wheels, tires and 2,300+ trailer parts, with a fitment check on every order.",
+      path: "/about",
+      image: "/assets/shop/wheel-set.webp",
+      jsonLd: [breadcrumbJsonLd([{ name: "Home", path: "/" }, { name: "About Us", path: "/about" }])],
+    }),
   component: About,
 });
 
@@ -18,7 +26,7 @@ function About() {
     <PageShell accent="Us" lede="Pristine Custom sells custom wheels, tires and trailer parts to people who want their rig built right." title="About">
       <div className="pc-about">
         <figure className="pc-about__media pc-glass">
-          <img alt="Gloss black tandem axle trailer with chrome wheels in a red-lit showroom" loading="lazy" src="/assets/brand/showroom.webp" />
+          <img alt="Four new ST225/75R15 trailer tires mounted on black machined aluminum wheels" height={1400} loading="lazy" src="/assets/shop/wheel-set.webp" width={1050} />
         </figure>
         <div className="pc-about__copy">
           <h2 className="pc-about__h">Built by trailer people</h2>
@@ -29,6 +37,11 @@ function About() {
           <p>
             Every order gets a fitment check before it ships. If something is off, we call you first instead of shipping the wrong part.
           </p>
+          <div className="pc-gallery">
+            <img alt="Machined black trailer wheels stacked in the shop" height={1400} loading="lazy" src="/assets/shop/wheel-stock.webp" width={1050} />
+            <img alt="Galvanized trailer axles with hubs ready to ship" height={1400} loading="lazy" src="/assets/shop/axles-stock.webp" width={1050} />
+            <img alt="Five lug galvanized trailer hub with wheel studs" height={1400} loading="lazy" src="/assets/shop/hub-studs.webp" width={1050} />
+          </div>
           <ul className="pc-about__points">
             {points.map((p) => (
               <li className="pc-glass" key={p.title}>

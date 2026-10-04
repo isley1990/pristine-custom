@@ -1,9 +1,26 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { PageShell } from "@/components/site/page-shell";
+import { abs, breadcrumbJsonLd, pageHead } from "@/lib/site";
 
 export const Route = createFileRoute("/how-to")({
-  head: () => ({ meta: [{ title: "How To's | Pristine Custom" }, { name: "description", content: "Step by step trailer guides: bolt patterns, bearings, leaf springs and wiring." }] }),
+  head: () =>
+    pageHead({
+      title: "Trailer How To's: Bolt Patterns, Bearings, Springs and Wiring",
+      description: "Step by step trailer guides: measure a bolt pattern, repack wheel bearings, replace leaf springs and wire 4-way trailer lights.",
+      path: "/how-to",
+      image: "/assets/shop/hub-studs.webp",
+      jsonLd: [
+        breadcrumbJsonLd([{ name: "Home", path: "/" }, { name: "How To's", path: "/how-to" }]),
+        ...guides.map((g) => ({
+          "@context": "https://schema.org",
+          "@type": "HowTo",
+          name: g.title,
+          image: abs(g.image),
+          step: g.steps.map((text, i) => ({ "@type": "HowToStep", position: i + 1, text })),
+        })),
+      ],
+    }),
   component: HowTo,
 });
 
@@ -11,7 +28,7 @@ const guides = [
   {
     id: "bolt-pattern",
     title: "Measure a bolt pattern",
-    image: "/assets/catalog/wheels.webp",
+    image: "/assets/shop/hub-studs.webp",
     steps: [
       "Count the lug studs on the hub. Trailers usually run 4, 5, 6 or 8.",
       "4, 6 or 8 lug: measure from the center of one stud to the center of the stud directly across.",

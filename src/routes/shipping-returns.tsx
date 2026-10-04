@@ -1,9 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { PageShell } from "@/components/site/page-shell";
+import { breadcrumbJsonLd, pageHead } from "@/lib/site";
 
 export const Route = createFileRoute("/shipping-returns")({
-  head: () => ({ meta: [{ title: "Shipping and Return Policy | Pristine Custom" }, { name: "description", content: "How Pristine Custom ships orders and handles returns." }] }),
+  head: () =>
+    pageHead({
+      title: "Shipping and Return Policy",
+      description: "How Pristine Custom ships trailer parts by parcel and freight, and how returns and refunds work.",
+      path: "/shipping-returns",
+      jsonLd: [breadcrumbJsonLd([{ name: "Home", path: "/" }, { name: "Shipping and Return Policy", path: "/shipping-returns" }])],
+    }),
   component: Policy,
 });
 

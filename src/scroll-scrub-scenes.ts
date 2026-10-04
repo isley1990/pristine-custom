@@ -10,7 +10,7 @@ import type {
 
 export const scrollScrubTheme: ScrollScrubTheme = {
   accent: "#D6232F",
-  background: "#0B0C0F",
+  background: "#1C1F25",
   ink: "#EEF0F3",
   muted: "#A0A7B2",
 };
@@ -28,7 +28,7 @@ export const scrollScrubScenes: ScrollScrubScene[] = [
     id: "start",
     label: "Start",
     title: "Built to roll pristine.",
-    body: "Custom wheels, trailer tires and every part under the frame, matched to your trailer and quoted fast.",
+    body: "2,300+ trailer parts: custom wheels, ST tires and every part under the frame, matched to your trailer.",
     scroll: 1.5,
   },
   {
@@ -37,8 +37,8 @@ export const scrollScrubScenes: ScrollScrubScene[] = [
     label: "Wheels",
     align: "right",
     title: "Chrome that holds up.",
-    body: "Aluminum and steel trailer wheels from 13 to 16 inches, sold bare or mounted and balanced.",
-    tags: ["4, 5, 6 and 8 lug", "Mounted and balanced"],
+    body: "Aluminum, galvanized and painted trailer wheels from 8 to 16 inches, sold bare or mounted on new ST tires.",
+    tags: ["4, 5, 6 and 8 lug", "Mounted assemblies"],
     scroll: 1.5,
   },
   {

@@ -3,7 +3,7 @@ import { useState, type FormEvent } from "react";
 import { submitQuote } from "@/lib/api/quote.functions";
 
 import { Close } from "./icons";
-import { formatPrice } from "@/lib/catalog";
+import { formatPrice } from "@/lib/categories";
 
 import { useCart } from "./cart-context";
 
@@ -53,7 +53,7 @@ export function QuoteSection() {
           email: email.trim(),
           category,
           details: details.trim(),
-          items: items.map((i) => `${i.qty} x ${i.name} (${i.sku}) ${formatPrice(i.price)}`),
+          items: items.map((i) => `${i.qty} x ${i.name} (#${i.sku}) ${i.price == null ? "call for price" : formatPrice(i.price)}`.slice(0, 160)),
           website,
         },
       });

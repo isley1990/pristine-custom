@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-import { formatPrice } from "@/lib/catalog";
+import { formatPrice } from "@/lib/categories";
 
 import { useCart } from "./cart-context";
 import { Close } from "./icons";
@@ -15,7 +15,7 @@ function CheckoutQuote({ onGo }: { onGo: () => void }) {
 }
 
 export function CartDrawer() {
-  const { items, subtotal, count, setQty, remove, open, setOpen } = useCart();
+  const { items, subtotal, count, unpriced, setQty, remove, open, setOpen } = useCart();
 
   useEffect(() => {
     if (!open) return;
@@ -41,7 +41,7 @@ export function CartDrawer() {
         {items.length === 0 ? (
           <div className="pc-drawer__empty">
             <p>Your cart is empty.</p>
-            <a href="/#catalog" onClick={() => setOpen(false)}>Shop parts</a>
+            <a href="/shop" onClick={() => setOpen(false)}>Shop parts</a>
           </div>
         ) : (
           <>
@@ -49,8 +49,8 @@ export function CartDrawer() {
               {items.map((i) => (
                 <li key={i.sku}>
                   <div className="pc-drawer__info">
-                    <p className="pc-drawer__name">{i.name}</p>
-                    <p className="pc-drawer__sku">{i.sku} · {formatPrice(i.price)}</p>
+                    <a className="pc-drawer__name" href={`/product/${i.slug}`} onClick={() => setOpen(false)}>{i.name}</a>
+                    <p className="pc-drawer__sku">#{i.sku} · {i.price == null ? "Call for price" : formatPrice(i.price)}</p>
                     <button className="pc-drawer__remove" onClick={() => remove(i.sku)} type="button">Remove</button>
                   </div>
                   <div className="pc-qty">
@@ -58,13 +58,16 @@ export function CartDrawer() {
                     <span aria-live="polite">{i.qty}</span>
                     <button aria-label={`Increase ${i.name}`} onClick={() => setQty(i.sku, i.qty + 1)} type="button">+</button>
                   </div>
-                  <p className="pc-drawer__line">{formatPrice(i.qty * i.price)}</p>
+                  <p className="pc-drawer__line">{i.price == null ? "TBD" : formatPrice(i.qty * i.price)}</p>
                 </li>
               ))}
             </ul>
             <div className="pc-drawer__foot">
               <p className="pc-drawer__sub"><span>Subtotal</span><strong>{formatPrice(subtotal)}</strong></p>
-              <p className="pc-drawer__note">Before shipping and tax. We confirm fitment and availability before any charge.</p>
+              <p className="pc-drawer__note">
+                {unpriced > 0 ? `${unpriced} item${unpriced === 1 ? "" : "s"} priced on your quote. ` : ""}
+                Before shipping and tax. We confirm fitment and availability before any charge.
+              </p>
               <CheckoutQuote onGo={() => setOpen(false)} />
             </div>
           </>

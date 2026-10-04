@@ -12,10 +12,12 @@ export function FitmentGuide() {
       <div className="pc-wrap pc-fit__grid">
         <figure className="pc-fit__media pc-glass">
           <img
-            alt="Gloss black tandem axle trailer with chrome wheels in a red-lit showroom"
+            alt="ST225/75R15 trailer tire sidewall showing size and load rating on a black machined wheel"
             decoding="async"
+            height={1050}
             loading="lazy"
-            src="/assets/brand/showroom.webp"
+            src="/assets/shop/tire-sidewall.webp"
+            width={1400}
           />
         </figure>
         <div>

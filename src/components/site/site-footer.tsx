@@ -1,4 +1,4 @@
-import { categories } from "@/lib/catalog";
+import { categories } from "@/lib/categories";
 
 export function SiteFooter() {
   return (
@@ -12,7 +12,7 @@ export function SiteFooter() {
           <nav aria-label="Footer">
             <h2>Menu</h2>
             <ul>
-              <li><a href="/#catalog">Shop Parts</a></li>
+              <li><a href="/shop">Shop Parts</a></li>
               <li><a href="/how-to">How To's</a></li>
               <li><a href="/about">About Us</a></li>
               <li><a href="/contact">Contact Us</a></li>
@@ -23,8 +23,8 @@ export function SiteFooter() {
           <div>
             <h2>Categories</h2>
             <ul>
-              {categories.slice(0, 7).map((c) => (
-                <li key={c.id}><a href={`/?cat=${c.id}#catalog`}>{c.name}</a></li>
+              {categories.slice(0, 8).map((c) => (
+                <li key={c.id}><a href={`/shop/${c.id}`}>{c.name}</a></li>
               ))}
             </ul>
           </div>

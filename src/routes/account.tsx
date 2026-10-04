@@ -4,10 +4,11 @@ import { useState, type FormEvent } from "react";
 import { useCart } from "@/components/site/cart-context";
 import { PageShell } from "@/components/site/page-shell";
 import { trackRequest } from "@/lib/api/quote.functions";
-import { formatPrice } from "@/lib/catalog";
+import { formatPrice } from "@/lib/categories";
+import { pageHead } from "@/lib/site";
 
 export const Route = createFileRoute("/account")({
-  head: () => ({ meta: [{ title: "My Account | Pristine Custom" }, { name: "robots", content: "noindex" }] }),
+  head: () => pageHead({ title: "My Account", description: "Track a quote request and review your cart.", path: "/account", noindex: true }),
   component: Account,
 });
 
@@ -96,7 +97,7 @@ function Account() {
                 {items.map((i) => (
                   <li key={i.sku}>
                     <span>{i.qty} x {i.name}</span>
-                    <span>{formatPrice(i.qty * i.price)}</span>
+                    <span>{i.price == null ? "Call for price" : formatPrice(i.qty * i.price)}</span>
                   </li>
                 ))}
               </ul>

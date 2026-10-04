@@ -957,3 +957,7 @@ a.pc-drawer__name:hover { text-decoration: underline; }
 @media (max-width: 560px) { .pc-related .pc-pgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .pc-subpage, .pc-admin { padding-top: 8.6rem; }
 @media (max-width: 980px) { .pc-subpage, .pc-admin { padding-top: 9.6rem; } }
+.pc-fit__media img { height: auto; max-height: 440px; }
+.pc-featured .pc-pgrid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+@media (max-width: 560px) { .pc-featured .pc-pgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+#fitment { padding-top: clamp(1.25rem, 2.5vw, 2rem); }

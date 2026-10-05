@@ -23,7 +23,7 @@ import {
   type AdminOrder,
   type AdminProduct,
 } from "@/lib/api/admin.functions";
-import { deliveryFee, type StoreSettings } from "@/lib/store-config";
+import { deliveryFee, ONLINE_PAYMENTS, type StoreSettings } from "@/lib/store-config";
 import { categories, categoryById, formatPrice } from "@/lib/categories";
 import { pageHead } from "@/lib/site";
 
@@ -816,12 +816,14 @@ function Settings() {
       </section>
 
       <section className="pc-form pc-glass">
-        <h2 className="pc-account__h">Payments</h2>
+        <h2 className="pc-account__h">Payment</h2>
+        <Toggle checked={s.payments.payLaterEnabled} hint="Order is saved and you collect payment by phone or at pickup." label="Pay at pickup / by phone" onChange={(b) => up("payments", { payLaterEnabled: b })} />
+        {ONLINE_PAYMENTS ? (
+          <>
         <p className={onlineLive ? "pc-settings__status is-on" : "pc-settings__status"}>Card, PayPal and Venmo at checkout: <strong>{dirty ? "unsaved changes" : statusText}</strong></p>
         <Toggle checked={s.payments.paypalEnabled} hint="Needs the PayPal Client ID and Secret below." label="Online payments with PayPal" onChange={(b) => up("payments", { paypalEnabled: b })} />
         <Toggle checked={s.payments.venmoEnabled} hint="US buyers; shows on supported devices." label="Venmo button" onChange={(b) => up("payments", { venmoEnabled: b })} />
         <Toggle checked={s.payments.cardEnabled} hint="Card form on the checkout page (Visa, Mastercard, Amex, Discover). Needs Advanced Credit and Debit Card Payments on your PayPal Business account; otherwise a guest card button is shown." label="Card payments" onChange={(b) => up("payments", { cardEnabled: b })} />
-        <Toggle checked={s.payments.payLaterEnabled} hint="Order is saved and you collect payment by phone or at pickup." label="Pay at pickup / by phone" onChange={(b) => up("payments", { payLaterEnabled: b })} />
         <div className="pc-field">
           <label>Mode</label>
           <select onChange={(e) => up("payments", { mode: e.target.value as "sandbox" | "live" })} value={s.payments.mode}>
@@ -845,6 +847,10 @@ function Settings() {
           {meta.secretSet || s.payments.clientId ? <button className="pc-admin__delete" disabled={busy} onClick={clearKeys} type="button">Remove keys</button> : null}
         </div>
         {ppMsg ? <p className={ppMsg.ok ? "pc-admin__msg" : "pc-error"} role="status">{ppMsg.text}</p> : null}
+          </>
+        ) : (
+          <p className="pc-admin__msg">Online payments (PayPal, Venmo, card) are turned off for now. Customers place the order at checkout and you collect payment by phone or at pickup.</p>
+        )}
       </section>
 
       <div className={dirty ? "pc-settings__save is-dirty" : "pc-settings__save"}>

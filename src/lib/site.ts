@@ -68,7 +68,6 @@ export const orgJsonLd = () => ({
   geo: { "@type": "GeoCoordinates", latitude: SITE.geo.lat, longitude: SITE.geo.lng },
   hasMap: SITE.mapsUrl,
   areaServed: [{ "@type": "State", name: "Florida" }, { "@type": "Country", name: "United States" }],
-  paymentAccepted: "PayPal, Venmo, Credit Card, Debit Card, Cash",
   currenciesAccepted: "USD",
   email: SITE.email,
   contactPoint: [{ "@type": "ContactPoint", contactType: "sales", telephone: SITE.phone, email: SITE.email, areaServed: "US", availableLanguage: ["English", "Spanish"] }],

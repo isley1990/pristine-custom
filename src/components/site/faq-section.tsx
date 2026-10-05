@@ -21,7 +21,7 @@ export const FAQS = [
   },
   {
     q: "How can I pay?",
-    a: "Pay at checkout with PayPal, Venmo or a debit or credit card. You can also place the order and pay at pickup or by phone.",
+    a: "Place your order online at checkout. We call to confirm fitment and arrange payment, or you pay when you pick up at our Vero Beach shop. Questions? Call or text (954) 797-1123.",
   },
   {
     q: "Do you sell complete trailer axles and mounted tire and wheel assemblies?",

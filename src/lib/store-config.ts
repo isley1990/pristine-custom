@@ -1,3 +1,6 @@
+/** Online payments (PayPal, Venmo, card via PayPal) are switched off for now. Flip to true to bring them back. */
+export const ONLINE_PAYMENTS = false;
+
 /** Checkout, delivery and tax settings. Shared by server and admin UI (no secrets here). */
 export type DeliverySettings = {
   enabled: boolean;

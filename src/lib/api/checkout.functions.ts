@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { geocodeUS } from "../geocode.server";
 import { paypalCapture, paypalConfig, paypalCreateOrder, type PPItem } from "../paypal.server";
-import { deliveryFee, orderNumber, roundMoney, straightMiles, type DeliveryQuote } from "../store-config";
+import { deliveryFee, ONLINE_PAYMENTS, orderNumber, roundMoney, straightMiles, type DeliveryQuote } from "../store-config";
 import { loadSettings } from "../store-settings.server";
 import { db } from "../supabase.server";
 
@@ -12,7 +12,7 @@ import { db } from "../supabase.server";
 export const getCheckoutConfig = createServerFn({ method: "GET" }).handler(async () => {
   const s = await loadSettings();
   const pp = await paypalConfig();
-  const online = s.payments.paypalEnabled && pp.ready;
+  const online = ONLINE_PAYMENTS && s.payments.paypalEnabled && pp.ready;
   return {
     store: { address: s.store.address, pickupHours: s.store.pickupHours },
     pickupEnabled: s.delivery.pickupEnabled,
@@ -31,7 +31,7 @@ export const getCheckoutConfig = createServerFn({ method: "GET" }).handler(async
       paypal: online,
       venmo: online && s.payments.venmoEnabled,
       card: online && s.payments.cardEnabled,
-      payLater: s.payments.payLaterEnabled,
+      payLater: s.payments.payLaterEnabled || !online, // always keep one way to order
       clientId: online ? s.payments.clientId : "",
       mode: s.payments.mode,
     },
@@ -149,8 +149,9 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
     const t = await computeTotals(data);
     if (t.blocked) throw new Error(t.blocked);
     const s = t.settings;
-    if (data.method === "pay_later" && !s.payments.payLaterEnabled) throw new Error("That payment option is not available.");
+    if (data.method === "pay_later" && !s.payments.payLaterEnabled && ONLINE_PAYMENTS && s.payments.paypalEnabled) throw new Error("That payment option is not available.");
     if (data.method !== "pay_later") {
+      if (!ONLINE_PAYMENTS) throw new Error("Online payment is not available right now.");
       const pp = await paypalConfig();
       if (!s.payments.paypalEnabled || !pp.ready) throw new Error("Online payment is not available right now.");
     }

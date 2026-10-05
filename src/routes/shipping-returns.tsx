@@ -7,7 +7,7 @@ export const Route = createFileRoute("/shipping-returns")({
   head: () =>
     pageHead({
       title: "Shipping and Return Policy",
-      description: "Pay with PayPal, Venmo or card. Free store pickup in Vero Beach, FL, local delivery priced by distance, and how returns and refunds work.",
+      description: "Order online and pay at pickup or by phone. Free store pickup in Vero Beach, FL, local delivery priced by distance, and how returns and refunds work.",
       path: "/shipping-returns",
       jsonLd: [breadcrumbJsonLd([{ name: "Home", path: "/" }, { name: "Shipping and Return Policy", path: "/shipping-returns" }])],
     }),
@@ -18,7 +18,7 @@ const sections = [
   {
     h: "Order processing",
     p: [
-      "Pay at checkout with PayPal, Venmo or a debit or credit card, or choose to pay at pickup or by phone.",
+      "Place your order online at checkout. We call to confirm fitment and arrange payment, or you pay when you pick up.",
       "We check fitment and availability on every order. If something will not fit your trailer, we call you before it leaves the shop and swap or refund it.",
       "Orders are prepared within 1 to 2 business days.",
     ],

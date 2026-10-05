@@ -10,7 +10,7 @@ import { pageHead, SITE } from "@/lib/site";
 
 export const Route = createFileRoute("/checkout")({
   loader: () => getCheckoutConfig(),
-  head: () => pageHead({ title: "Checkout", description: "Pay for your trailer parts with PayPal, Venmo or card. Delivery priced by distance, or free store pickup in Vero Beach.", path: "/checkout", noindex: true }),
+  head: () => pageHead({ title: "Checkout", description: "Order trailer parts online. Delivery priced by distance from Vero Beach, FL, or free store pickup. Pay at pickup or by phone.", path: "/checkout", noindex: true }),
   component: Checkout,
 });
 
@@ -340,7 +340,7 @@ function Checkout() {
   const setA = (k: keyof typeof addr) => (e: { target: { value: string } }) => setAddr((a) => ({ ...a, [k]: e.target.value }));
 
   return (
-    <PageShell accent="out" lede="Pay by card, PayPal or Venmo. Delivery is priced by distance from our Vero Beach shop, or pick up for free." title="Check">
+    <PageShell accent="out" lede={cfg.payments.online ? "Pay by card, PayPal or Venmo. Delivery is priced by distance from our Vero Beach shop, or pick up for free." : "Place your order in a minute. Delivery is priced by distance from our Vero Beach shop, or pick up for free."} title="Check">
       <div className="pc-co">
         <div className="pc-co__main">
           <section className="pc-form pc-glass" aria-labelledby="co-contact">
@@ -453,15 +453,15 @@ function Checkout() {
                   <div ref={ppRefs.card} />
                 </>
               ) : (
-                <p className="pc-co__hint">Card, PayPal and Venmo payments turn on as soon as the store connects its PayPal account. You can place the order now and pay at pickup or by phone.</p>
+                <p className="pc-co__hint">Place your order now. We call you to confirm fitment and arrange payment, or you pay when you pick up.</p>
               )}
               {cfg.payments.payLater ? (
-                <button className="pc-cta-browse pc-co__later" disabled={busy || blocked} onClick={payLater} type="button">
-                  {busy ? "Placing order…" : "Place order · pay at pickup or by phone"}
+                <button className={cfg.payments.online ? "pc-cta-browse pc-co__later" : "pc-cta-buy pc-co__btn pc-co__paycard"} disabled={busy || blocked} onClick={payLater} type="button">
+                  {busy ? "Placing order…" : cfg.payments.online ? "Place order · pay at pickup or by phone" : `Place order${quote ? ` · ${formatPrice(quote.total)}` : ""}`}
                 </button>
               ) : null}
             </div>
-            <p className="pc-co__fine">Payments are processed by PayPal. We never see or store your card or bank details. We confirm fitment before your order ships; see our <a href="/shipping-returns">shipping and return policy</a>.</p>
+            <p className="pc-co__fine">{cfg.payments.online ? "Payments are processed by PayPal. We never see or store your card or bank details. " : ""}We confirm fitment before your order ships; see our <a href="/shipping-returns">shipping and return policy</a>.</p>
           </section>
         </div>
 

@@ -9,7 +9,7 @@ export const Route = createFileRoute("/contact")({
   head: () =>
     pageHead({
       title: "Contact Us",
-      description: "Call or text Pristine Custom at (954) 797-1123, email pristinecustomwheels@gmail.com, or send a message about a trailer part, fitment or a return.",
+      description: "Call or text Pristine Custom at (954) 797-1123, visit 1621 91st Ct, Vero Beach, FL 32966, or send a message about a trailer part, fitment or a return.",
       path: "/contact",
       jsonLd: [orgJsonLd(), breadcrumbJsonLd([{ name: "Home", path: "/" }, { name: "Contact Us", path: "/contact" }])],
     }),
@@ -65,6 +65,7 @@ function Contact() {
               <h2>Talk to the parts desk</h2>
               <p><a className="pc-contact__big" href={SITE.phoneHref}>{SITE.phoneDisplay}</a></p>
               <p><a href={`mailto:${SITE.email}`}>{SITE.email}</a></p>
+              <p><a href={SITE.mapsUrl} rel="noopener" target="_blank">{SITE.addressLine}</a></p>
               <p>Call or text with a part number, your bolt pattern or a photo of the old part.</p>
             </div>
           </div>

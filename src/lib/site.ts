@@ -10,6 +10,10 @@ export const SITE = {
   phoneHref: "tel:+19547971123",
   phoneDisplay: "(954) 797-1123",
   email: "pristinecustomwheels@gmail.com",
+  address: { street: "1621 91st Ct", city: "Vero Beach", region: "FL", postalCode: "32966", country: "US" },
+  addressLine: "1621 91st Ct, Vero Beach, FL 32966",
+  geo: { lat: 27.632454, lng: -80.514558 },
+  mapsUrl: "https://www.google.com/maps/search/?api=1&query=1621+91st+Ct%2C+Vero+Beach%2C+FL+32966",
   ogImage: "https://d2ol7oe51mr4n9.cloudfront.net/user_3Jqhc1Ufis49sz6GBGQdw7AizU2/1a61c9d8-8092-4cf3-8763-da4663af618e.jpg",
 };
 
@@ -53,6 +57,19 @@ export const orgJsonLd = () => ({
   description: SITE.description,
   priceRange: "$$",
   telephone: SITE.phone,
+  address: {
+    "@type": "PostalAddress",
+    streetAddress: SITE.address.street,
+    addressLocality: SITE.address.city,
+    addressRegion: SITE.address.region,
+    postalCode: SITE.address.postalCode,
+    addressCountry: SITE.address.country,
+  },
+  geo: { "@type": "GeoCoordinates", latitude: SITE.geo.lat, longitude: SITE.geo.lng },
+  hasMap: SITE.mapsUrl,
+  areaServed: [{ "@type": "State", name: "Florida" }, { "@type": "Country", name: "United States" }],
+  paymentAccepted: "PayPal, Venmo, Credit Card, Debit Card, Cash",
+  currenciesAccepted: "USD",
   email: SITE.email,
   contactPoint: [{ "@type": "ContactPoint", contactType: "sales", telephone: SITE.phone, email: SITE.email, areaServed: "US", availableLanguage: ["English", "Spanish"] }],
   knowsAbout: [

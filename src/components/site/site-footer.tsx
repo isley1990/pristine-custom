@@ -12,6 +12,7 @@ export function SiteFooter() {
             <ul className="pc-footer__contact">
               <li><a href={SITE.phoneHref}>Call or text {SITE.phoneDisplay}</a></li>
               <li><a href={`mailto:${SITE.email}`}>{SITE.email}</a></li>
+              <li><a href={SITE.mapsUrl} rel="noopener" target="_blank">{SITE.addressLine}</a></li>
             </ul>
           </div>
           <nav aria-label="Footer">

@@ -5,6 +5,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { quickSearch, type ProductCard } from "@/lib/api/products.functions";
 import { formatPrice } from "@/lib/categories";
 
+import { adminLogout } from "@/lib/api/admin.functions";
 import { SITE } from "@/lib/site";
 
 import { useCart } from "./cart-context";
@@ -138,7 +139,7 @@ function CartButton() {
   );
 }
 
-export function SiteHeader() {
+export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
   const [menuOpen, setMenuOpen] = useState(false);
   useEffect(() => {
     if (!menuOpen) return;
@@ -183,12 +184,28 @@ export function SiteHeader() {
                   <a href={m.href} onClick={() => setMenuOpen(false)}>{m.label}</a>
                 </li>
               ))}
-              <li>
-                <a className="pc-menu__account" href="/account" onClick={() => setMenuOpen(false)}>
-                  <UserIcon />
-                  My Account
-                </a>
-              </li>
+              {signedIn ? (
+                <>
+                  <li>
+                    <a className="pc-menu__account" href="/admin" onClick={() => setMenuOpen(false)}>
+                      <UserIcon />
+                      Admin
+                    </a>
+                  </li>
+                  <li>
+                    <button className="pc-menu__signout" onClick={() => adminLogout().then(() => window.location.assign("/account"))} type="button">
+                      Sign out
+                    </button>
+                  </li>
+                </>
+              ) : (
+                <li>
+                  <a className="pc-menu__account" href="/account" onClick={() => setMenuOpen(false)}>
+                    <UserIcon />
+                    My Account
+                  </a>
+                </li>
+              )}
             </ul>
           </nav>
         </div>

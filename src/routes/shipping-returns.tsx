@@ -7,7 +7,7 @@ export const Route = createFileRoute("/shipping-returns")({
   head: () =>
     pageHead({
       title: "Shipping and Return Policy",
-      description: "How Pristine Custom ships trailer parts by parcel and freight, and how returns and refunds work.",
+      description: "Pay with PayPal, Venmo or card. Free store pickup in Vero Beach, FL, local delivery priced by distance, and how returns and refunds work.",
       path: "/shipping-returns",
       jsonLd: [breadcrumbJsonLd([{ name: "Home", path: "/" }, { name: "Shipping and Return Policy", path: "/shipping-returns" }])],
     }),
@@ -18,15 +18,18 @@ const sections = [
   {
     h: "Order processing",
     p: [
-      "We confirm fitment and availability on every order before it is charged or shipped.",
-      "Confirmed orders are prepared within 1 to 2 business days.",
+      "Pay at checkout with PayPal, Venmo or a debit or credit card, or choose to pay at pickup or by phone.",
+      "We check fitment and availability on every order. If something will not fit your trailer, we call you before it leaves the shop and swap or refund it.",
+      "Orders are prepared within 1 to 2 business days.",
     ],
   },
   {
-    h: "Shipping",
+    h: "Delivery and pickup",
     p: [
-      "Small parts ship by parcel carrier with tracking.",
-      "Axles, mounted wheel and tire packages and other oversized items ship by freight. Freight cost is included in your quote.",
+      "Store pickup is free at 1621 91st Ct, Vero Beach, FL 32966. We call or text when your order is ready.",
+      "Local delivery is priced by road distance from our shop: a base fee covers the first miles, then a per-mile rate. Checkout shows the exact fee for your address before you pay.",
+      "Large orders close to the shop can qualify for free delivery; the threshold is shown at checkout.",
+      "Farther than our delivery range? Call or text (954) 797-1123 for parcel or freight options.",
       "Inspect every package on delivery. Report visible freight damage on the delivery receipt and contact us within 48 hours.",
     ],
   },
@@ -50,7 +53,7 @@ const sections = [
 
 function Policy() {
   return (
-    <PageShell accent="Return Policy" lede="Clear rules on how parts get to you and what happens if something needs to come back." title="Shipping and">
+    <PageShell accent="Return Policy" lede="How you pay, how parts get to you, and what happens if something needs to come back." title="Shipping and">
       <div className="pc-policy">
         {sections.map((s) => (
           <section className="pc-policy__block pc-glass" key={s.h}>

@@ -14,8 +14,15 @@ import {
   adminSession,
   adminStats,
   adminUploadImage,
+  adminGetSettings,
+  adminListOrders,
+  adminSaveSettings,
+  adminTestDelivery,
+  adminUpdateOrder,
+  type AdminOrder,
   type AdminProduct,
 } from "@/lib/api/admin.functions";
+import { deliveryFee, type StoreSettings } from "@/lib/store-config";
 import { categories, categoryById, formatPrice } from "@/lib/categories";
 import { pageHead } from "@/lib/site";
 
@@ -25,7 +32,7 @@ export const Route = createFileRoute("/admin")({
   component: Admin,
 });
 
-type Tab = "products" | "prices" | "quotes" | "messages";
+type Tab = "orders" | "products" | "prices" | "quotes" | "messages" | "settings";
 
 function Admin() {
   const session = Route.useLoaderData();
@@ -76,7 +83,7 @@ function Login({ configured, onDone }: { configured: boolean; onDone: () => void
 }
 
 function Dashboard({ onLogout }: { onLogout: () => void }) {
-  const [tab, setTab] = useState<Tab>("products");
+  const [tab, setTab] = useState<Tab>("orders");
   const [stats, setStats] = useState<Awaited<ReturnType<typeof adminStats>> | null>(null);
   const loadStats = useCallback(() => {
     adminStats().then(setStats).catch(() => onLogout());
@@ -87,10 +94,11 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
       <div className="pc-wrap">
         <header className="pc-admin__head">
           <h1 className="pc-display">Store <span className="pc-red-text">admin</span></h1>
-          <button className="pc-admin__logout" onClick={() => adminLogout().then(onLogout)} type="button">Sign out</button>
+          <button className="pc-admin__logout" onClick={() => adminLogout().then(() => { onLogout(); window.location.assign("/account"); })} type="button">Sign out</button>
         </header>
         {stats ? (
           <ul className="pc-admin__stats">
+            <li><strong>{stats.openOrders}</strong> open orders</li>
             <li><strong>{stats.total.toLocaleString("en-US")}</strong> products</li>
             <li><strong>{stats.active.toLocaleString("en-US")}</strong> visible</li>
             <li><strong>{stats.noPrice.toLocaleString("en-US")}</strong> without price</li>
@@ -102,15 +110,19 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
         <nav aria-label="Admin sections" className="pc-admin__tabs" role="tablist">
           {(
             [
+              ["orders", "Orders"],
               ["products", "Products"],
               ["prices", "Import prices"],
               ["quotes", "Quote requests"],
               ["messages", "Messages"],
+              ["settings", "Checkout & delivery"],
             ] as [Tab, string][]
           ).map(([id, label]) => (
             <button aria-selected={tab === id} key={id} onClick={() => setTab(id)} role="tab" type="button">{label}</button>
           ))}
         </nav>
+        {tab === "orders" ? <Orders onChange={loadStats} /> : null}
+        {tab === "settings" ? <Settings /> : null}
         {tab === "products" ? <Products onChange={loadStats} /> : null}
         {tab === "prices" ? <Prices onChange={loadStats} /> : null}
         {tab === "quotes" ? <Quotes /> : null}
@@ -521,6 +533,283 @@ function Messages() {
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+/* ---------- Orders ---------- */
+
+const STATUS_OPTIONS: [string, string][] = [
+  ["pending_payment", "Waiting for payment"],
+  ["paid", "Paid"],
+  ["pay_later", "Pay at pickup / phone"],
+  ["processing", "Preparing"],
+  ["ready", "Ready for pickup"],
+  ["out_for_delivery", "Out for delivery"],
+  ["completed", "Completed"],
+  ["cancelled", "Cancelled"],
+  ["refunded", "Refunded"],
+];
+const statusLabel = (s: string) => STATUS_OPTIONS.find(([k]) => k === s)?.[1] ?? s;
+const METHOD_LABEL: Record<string, string> = { paypal: "PayPal", venmo: "Venmo", card: "Card (PayPal)", pay_later: "Pay at pickup / phone" };
+
+function Orders({ onChange }: { onChange: () => void }) {
+  const [status, setStatus] = useState("open");
+  const [page, setPage] = useState(1);
+  const [data, setData] = useState<{ orders: AdminOrder[]; total: number } | null>(null);
+  const [open, setOpen] = useState<number | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+  const load = useCallback(() => {
+    setData(null);
+    adminListOrders({ data: { status, page } }).then(setData).catch(() => setData({ orders: [], total: 0 }));
+  }, [status, page]);
+  useEffect(load, [load]);
+
+  const save = async (o: AdminOrder, st: string, notes: string) => {
+    setMsg(null);
+    try {
+      await adminUpdateOrder({ data: { id: o.id, status: st as never, admin_notes: notes.trim() || null } });
+      setMsg(`${o.orderNo} updated.`);
+      onChange();
+      load();
+    } catch (e) {
+      setMsg((e as Error).message);
+    }
+  };
+
+  return (
+    <div>
+      <div className="pc-toolbar pc-glass pc-admin__filters">
+        <label className="pc-toolbar__sort">
+          Show
+          <select onChange={(e) => { setStatus(e.target.value); setPage(1); }} value={status}>
+            <option value="open">Open orders</option>
+            <option value="all">All orders</option>
+            {STATUS_OPTIONS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+          </select>
+        </label>
+        <button className="pc-admin__edit" onClick={load} type="button">Refresh</button>
+        {data ? <p className="pc-toolbar__count">{data.total} orders</p> : null}
+      </div>
+      {msg ? <p className="pc-admin__msg" role="status">{msg}</p> : null}
+      {!data ? <p className="pc-admin__msg">Loading orders…</p> : !data.orders.length ? (
+        <p className="pc-admin__msg">No orders here yet. Paid and pay-later orders show under Open orders.</p>
+      ) : (
+        <div className="pc-orders">
+          {data.orders.map((o) => (
+            <OrderCard key={o.id} o={o} onSave={save} open={open === o.id} onToggle={() => setOpen(open === o.id ? null : o.id)} />
+          ))}
+        </div>
+      )}
+      {data && data.total > 30 ? (
+        <div className="pc-pager">
+          <button disabled={page <= 1} onClick={() => setPage(page - 1)} type="button">Prev</button>
+          <span>{page}</span>
+          <button disabled={page * 30 >= data.total} onClick={() => setPage(page + 1)} type="button">Next</button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function OrderCard({ o, open, onToggle, onSave }: { o: AdminOrder; open: boolean; onToggle: () => void; onSave: (o: AdminOrder, st: string, notes: string) => void }) {
+  const [st, setSt] = useState(o.status);
+  const [notes, setNotes] = useState(o.admin_notes ?? "");
+  return (
+    <article className={`pc-order pc-glass is-${o.status}`}>
+      <button aria-expanded={open} className="pc-order__head" onClick={onToggle} type="button">
+        <span className="pc-order__no">{o.orderNo}</span>
+        <span>{o.created_at}</span>
+        <span>{o.name}</span>
+        <span>{o.fulfillment === "pickup" ? "Pickup" : `Delivery · ${o.miles ?? "?"} mi`}</span>
+        <span className="pc-order__badge">{statusLabel(o.status)}</span>
+        <strong>{formatPrice(o.total)}</strong>
+      </button>
+      {open ? (
+        <div className="pc-order__body">
+          <div className="pc-order__cols">
+            <div>
+              <h4>Customer</h4>
+              <p>{o.name}<br /><a href={`tel:${o.phone}`}>{o.phone}</a><br /><a href={`mailto:${o.email}`}>{o.email}</a></p>
+              <h4>{o.fulfillment === "pickup" ? "Store pickup" : "Deliver to"}</h4>
+              <p>{o.fulfillment === "pickup" ? "Customer picks up at the shop." : <>{o.address}<br /><small>Matched: {o.matched_address} · {o.miles} mi</small></>}</p>
+              {o.notes ? <><h4>Customer notes</h4><p>{o.notes}</p></> : null}
+              <h4>Payment</h4>
+              <p>{METHOD_LABEL[o.payment_method] ?? o.payment_method}{o.paypal_capture_id ? <><br /><small>Capture {o.paypal_capture_id}{o.payer_email ? ` · ${o.payer_email}` : ""}</small></> : null}</p>
+            </div>
+            <div>
+              <h4>Items</h4>
+              <ul className="pc-order__items">
+                {o.items.map((i) => (
+                  <li key={i.sku}><span>{i.qty} × {i.name} <small>#{i.sku}</small></span><span>{formatPrice(i.lineTotal)}</span></li>
+                ))}
+              </ul>
+              <dl className="pc-order__totals">
+                <div><dt>Subtotal</dt><dd>{formatPrice(o.subtotal)}</dd></div>
+                <div><dt>Delivery</dt><dd>{formatPrice(o.delivery_fee)}</dd></div>
+                <div><dt>Tax</dt><dd>{formatPrice(o.tax)}</dd></div>
+                <div><dt>Total</dt><dd><strong>{formatPrice(o.total)}</strong></dd></div>
+              </dl>
+            </div>
+          </div>
+          <div className="pc-order__edit">
+            <label>Status
+              <select onChange={(e) => setSt(e.target.value)} value={st}>
+                {STATUS_OPTIONS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+              </select>
+            </label>
+            <label className="pc-order__notes">Internal notes
+              <input onChange={(e) => setNotes(e.target.value)} placeholder="Only visible here" value={notes} />
+            </label>
+            <button className="pc-admin__new" onClick={() => onSave(o, st, notes)} type="button">Save</button>
+          </div>
+          {o.status === "refunded" || o.status === "cancelled" ? <p className="pc-admin__msg">Refunds are issued in your PayPal account; then mark the order Refunded here.</p> : null}
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
+/* ---------- Checkout & delivery settings ---------- */
+
+function NumField({ label, value, onChange, step = 0.01, suffix }: { label: string; value: number; onChange: (n: number) => void; step?: number; suffix?: string }) {
+  return (
+    <div className="pc-field">
+      <label>{label}{suffix ? ` (${suffix})` : ""}</label>
+      <input inputMode="decimal" onChange={(e) => onChange(Number(e.target.value))} step={step} type="number" value={Number.isFinite(value) ? value : 0} />
+    </div>
+  );
+}
+
+function Toggle({ label, checked, onChange, hint }: { label: string; checked: boolean; onChange: (b: boolean) => void; hint?: string }) {
+  return (
+    <label className="pc-toggle">
+      <input checked={checked} onChange={(e) => onChange(e.target.checked)} type="checkbox" />
+      <span>{label}{hint ? <small>{hint}</small> : null}</span>
+    </label>
+  );
+}
+
+function Settings() {
+  const [s, setS] = useState<StoreSettings | null>(null);
+  const [meta, setMeta] = useState<{ secretSet: boolean; secretFromEnv: boolean; clientIdFromEnv: boolean } | null>(null);
+  const [secret, setSecret] = useState("");
+  const [msg, setMsg] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [test, setTest] = useState({ address: "", subtotal: 250 });
+  const [testOut, setTestOut] = useState<string | null>(null);
+
+  const load = () => adminGetSettings().then((r) => { setS(r.settings); setMeta(r); });
+  useEffect(() => void load(), []);
+  if (!s || !meta) return <p className="pc-admin__msg">Loading settings…</p>;
+
+  const up = <K extends keyof StoreSettings>(k: K, patch: Partial<StoreSettings[K]>) => setS({ ...s, [k]: { ...s[k], ...patch } });
+  const d = s.delivery;
+  const examples = [5, 15, 30, 60, 100].map((mi) => ({ mi, q: deliveryFee(d, mi, test.subtotal) }));
+
+  const save = async () => {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const r = await adminSaveSettings({ data: { settings: s, newSecret: secret || undefined } });
+      if (!r.ok) setMsg(r.error);
+      else {
+        setMsg("Settings saved. Checkout uses them right away.");
+        setSecret("");
+        await load();
+      }
+    } catch (e) {
+      setMsg((e as Error).message || "Could not save.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const runTest = async () => {
+    setTestOut("Checking…");
+    try {
+      const r = await adminTestDelivery({ data: { address: test.address, subtotal: test.subtotal, delivery: d } });
+      if (!r.ok) return setTestOut(r.error);
+      const q = r.quote;
+      setTestOut(q.available ? `${r.matched}: ${q.miles} mi → ${q.free ? "FREE" : formatPrice(q.fee)} (${q.breakdown})` : `${r.matched}: ${q.reason}`);
+    } catch {
+      setTestOut("Could not check that address.");
+    }
+  };
+
+  return (
+    <div className="pc-settings">
+      <section className="pc-form pc-glass">
+        <h2 className="pc-account__h">Store & pickup</h2>
+        <div className="pc-field"><label>Store address (delivery distance is measured from here)</label><input onChange={(e) => up("store", { address: e.target.value })} value={s.store.address} /></div>
+        <div className="pc-field"><label>Pickup hours</label><input onChange={(e) => up("store", { pickupHours: e.target.value })} value={s.store.pickupHours} /></div>
+        <Toggle checked={d.pickupEnabled} label="Offer free store pickup" onChange={(b) => up("delivery", { pickupEnabled: b })} />
+      </section>
+
+      <section className="pc-form pc-glass">
+        <h2 className="pc-account__h">Delivery by miles</h2>
+        <Toggle checked={d.enabled} label="Offer delivery" onChange={(b) => up("delivery", { enabled: b })} />
+        <div className="pc-settings__grid">
+          <NumField label="Base fee" onChange={(n) => up("delivery", { baseFee: n })} suffix="$" value={d.baseFee} />
+          <NumField label="Miles included in base" onChange={(n) => up("delivery", { includedMiles: n })} step={1} value={d.includedMiles} />
+          <NumField label="Rate per mile" onChange={(n) => up("delivery", { ratePerMile: n })} suffix="$" value={d.ratePerMile} />
+          <NumField label="Long-distance rate starts at" onChange={(n) => up("delivery", { tierBreakMiles: n })} step={1} suffix="mi" value={d.tierBreakMiles} />
+          <NumField label="Long-distance rate per mile" onChange={(n) => up("delivery", { tierRatePerMile: n })} suffix="$" value={d.tierRatePerMile} />
+          <NumField label="Minimum delivery fee" onChange={(n) => up("delivery", { minFee: n })} suffix="$" value={d.minFee} />
+          <NumField label="Maximum delivery distance" onChange={(n) => up("delivery", { maxMiles: n })} step={1} suffix="mi" value={d.maxMiles} />
+          <NumField label="Free delivery on orders over" onChange={(n) => up("delivery", { freeOver: n })} suffix="$, 0 = off" value={d.freeOver} />
+          <NumField label="Free delivery only within" onChange={(n) => up("delivery", { freeWithinMiles: n })} step={1} suffix="mi" value={d.freeWithinMiles} />
+          <NumField label="Road distance factor" onChange={(n) => up("delivery", { roadFactor: n })} step={0.05} suffix="straight line × factor" value={d.roadFactor} />
+        </div>
+        <p className="pc-admin__msg">Example fees for a {formatPrice(test.subtotal)} order:</p>
+        <ul className="pc-settings__examples">
+          {examples.map(({ mi, q }) => (
+            <li key={mi}><strong>{mi} mi</strong> {q.available ? (q.free ? "Free" : formatPrice(q.fee)) : "Not offered"}</li>
+          ))}
+        </ul>
+        <div className="pc-settings__test">
+          <div className="pc-field"><label>Test an address</label><input onChange={(e) => setTest({ ...test, address: e.target.value })} placeholder="2000 US-1, Fort Pierce, FL 34950" value={test.address} /></div>
+          <NumField label="Order subtotal" onChange={(n) => setTest({ ...test, subtotal: n })} suffix="$" value={test.subtotal} />
+          <button className="pc-admin__edit" disabled={test.address.length < 5} onClick={runTest} type="button">Check</button>
+        </div>
+        {testOut ? <p className="pc-admin__msg">{testOut}</p> : null}
+      </section>
+
+      <section className="pc-form pc-glass">
+        <h2 className="pc-account__h">Sales tax</h2>
+        <div className="pc-settings__grid">
+          <NumField label="Tax rate" onChange={(n) => up("tax", { rate: n })} step={0.01} suffix="%" value={s.tax.rate} />
+        </div>
+        <Toggle checked={s.tax.taxDelivery} hint="Leave off if delivery is billed separately and optional." label="Charge tax on delivery" onChange={(b) => up("tax", { taxDelivery: b })} />
+      </section>
+
+      <section className="pc-form pc-glass">
+        <h2 className="pc-account__h">Payments</h2>
+        <Toggle checked={s.payments.paypalEnabled} hint="Needs the PayPal Client ID and Secret below." label="Online payments with PayPal" onChange={(b) => up("payments", { paypalEnabled: b })} />
+        <Toggle checked={s.payments.venmoEnabled} hint="US buyers; shows on supported devices." label="Venmo button" onChange={(b) => up("payments", { venmoEnabled: b })} />
+        <Toggle checked={s.payments.cardEnabled} hint="Guest debit/credit card through PayPal." label="Debit or credit card button" onChange={(b) => up("payments", { cardEnabled: b })} />
+        <Toggle checked={s.payments.payLaterEnabled} hint="Order is saved and you collect payment by phone or at pickup." label="Pay at pickup / by phone" onChange={(b) => up("payments", { payLaterEnabled: b })} />
+        <div className="pc-field">
+          <label>Mode</label>
+          <select onChange={(e) => up("payments", { mode: e.target.value as "sandbox" | "live" })} value={s.payments.mode}>
+            <option value="sandbox">Sandbox (test payments)</option>
+            <option value="live">Live (real payments)</option>
+          </select>
+        </div>
+        <div className="pc-field">
+          <label>PayPal Client ID{meta.clientIdFromEnv ? " (set in Vercel)" : ""}</label>
+          <input disabled={meta.clientIdFromEnv} onChange={(e) => up("payments", { clientId: e.target.value })} placeholder="From developer.paypal.com → Apps & Credentials" value={s.payments.clientId} />
+        </div>
+        <div className="pc-field">
+          <label>PayPal Secret {meta.secretFromEnv ? "(set in Vercel)" : meta.secretSet ? "(saved, hidden)" : "(not set)"}</label>
+          <input autoComplete="off" disabled={meta.secretFromEnv} onChange={(e) => setSecret(e.target.value)} placeholder={meta.secretSet ? "Leave empty to keep the saved secret" : "Paste the secret"} type="password" value={secret} />
+        </div>
+      </section>
+
+      <div className="pc-settings__save">
+        {msg ? <p className="pc-admin__msg" role="status">{msg}</p> : null}
+        <button className="pc-admin__new" disabled={busy} onClick={save} type="button">{busy ? "Saving…" : "Save settings"}</button>
+      </div>
     </div>
   );
 }

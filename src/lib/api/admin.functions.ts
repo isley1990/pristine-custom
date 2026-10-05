@@ -4,6 +4,9 @@ import { z } from "zod";
 import { categories, productImage } from "../categories";
 import { checkPassword, endSession, isAdmin, requireAdmin, startSession } from "../admin-auth.server";
 import { db } from "../supabase.server";
+import { DEFAULT_SETTINGS, deliveryFee, orderNumber, straightMiles, type StoreSettings } from "../store-config";
+import { clientIdFromEnv, loadPaypalSecret, loadSettings, saveSettings, savePaypalSecret, secretFromEnv } from "../store-settings.server";
+import { geocodeUS } from "../geocode.server";
 
 const T = "pristine_products";
 const ADMIN_PAGE = 50;
@@ -97,15 +100,16 @@ export const adminStats = createServerFn({ method: "GET" }).handler(async () => 
   requireAdmin();
   const head = () => db().from(T).select("id", { count: "exact", head: true });
   const n = (r: { count: number | null }) => r.count ?? 0;
-  const [total, active, noPrice, outOfStock, quotes, messages] = await Promise.all([
+  const [total, active, noPrice, outOfStock, quotes, messages, openOrders] = await Promise.all([
     head().then(n),
     head().eq("active", true).then(n),
     head().eq("active", true).is("price", null).then(n),
     head().eq("in_stock", false).then(n),
     db().from("pristine_quote_requests").select("id", { count: "exact", head: true }).then(n),
     db().from("pristine_contact_messages").select("id", { count: "exact", head: true }).then(n),
+    db().from("pristine_orders").select("id", { count: "exact", head: true }).in("status", ["paid", "pay_later", "processing", "ready", "out_for_delivery"]).then(n),
   ]);
-  return { total, active, noPrice, outOfStock, quotes, messages };
+  return { total, active, noPrice, outOfStock, quotes, messages, openOrders };
 });
 
 const productInput = z.object({
@@ -261,3 +265,138 @@ export const adminListMessages = createServerFn({ method: "GET" }).handler(async
   if (error) throw new Error("Could not load messages.");
   return { rows: (data ?? []).map((r) => ({ ...r, created_at: String(r.created_at).replace("T", " ").slice(0, 16) })) };
 });
+
+/* ---------- Orders ---------- */
+
+export type AdminOrder = {
+  id: number;
+  orderNo: string;
+  created_at: string;
+  status: string;
+  name: string;
+  email: string;
+  phone: string;
+  fulfillment: string;
+  address: string | null;
+  matched_address: string | null;
+  miles: number | null;
+  items: { sku: string; name: string; slug: string; qty: number; price: number; lineTotal: number }[];
+  subtotal: number;
+  delivery_fee: number;
+  tax: number;
+  total: number;
+  payment_method: string;
+  paypal_capture_id: string | null;
+  payer_email: string | null;
+  notes: string | null;
+  admin_notes: string | null;
+};
+
+const ORDER_STATUSES = ["pending_payment", "paid", "pay_later", "processing", "ready", "out_for_delivery", "completed", "cancelled", "refunded"] as const;
+
+export const adminListOrders = createServerFn({ method: "GET" })
+  .validator(z.object({ status: z.string().default("open"), page: z.number().int().min(1).default(1) }))
+  .handler(async ({ data }) => {
+    requireAdmin();
+    let q = db()
+      .from("pristine_orders")
+      .select("*", { count: "exact" })
+      .order("created_at", { ascending: false })
+      .range((data.page - 1) * 30, data.page * 30 - 1);
+    if (data.status === "open") q = q.in("status", ["paid", "pay_later", "processing", "ready", "out_for_delivery"]);
+    else if (data.status !== "all") q = q.eq("status", data.status);
+    const { data: rows, count, error } = await q;
+    if (error) throw new Error(error.message);
+    const orders: AdminOrder[] = (rows ?? []).map((r) => ({
+      ...(r as Omit<AdminOrder, "orderNo">),
+      orderNo: orderNumber(r.id as number),
+      created_at: new Date(r.created_at as string).toLocaleString("en-US", { timeZone: "America/New_York", dateStyle: "medium", timeStyle: "short" }),
+      miles: r.miles == null ? null : Number(r.miles),
+      subtotal: Number(r.subtotal),
+      delivery_fee: Number(r.delivery_fee),
+      tax: Number(r.tax),
+      total: Number(r.total),
+    }));
+    return { orders, total: count ?? 0 };
+  });
+
+export const adminUpdateOrder = createServerFn({ method: "POST" })
+  .validator(z.object({ id: z.number().int().positive(), status: z.enum(ORDER_STATUSES), admin_notes: z.string().max(1000).nullable() }))
+  .handler(async ({ data }) => {
+    requireAdmin();
+    const { error } = await db()
+      .from("pristine_orders")
+      .update({ status: data.status, admin_notes: data.admin_notes, updated_at: new Date().toISOString() })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true as const };
+  });
+
+/* ---------- Settings ---------- */
+
+export const adminGetSettings = createServerFn({ method: "GET" }).handler(async () => {
+  requireAdmin();
+  const s = await loadSettings();
+  const secret = await loadPaypalSecret();
+  return { settings: s, secretSet: !!secret, secretFromEnv: secretFromEnv(), clientIdFromEnv: clientIdFromEnv() };
+});
+
+const num = (min: number, max: number) => z.number().finite().min(min).max(max);
+const settingsSchema = z.object({
+  store: z.object({ name: z.string().trim().min(2).max(120), address: z.string().trim().min(5).max(200), lat: num(-90, 90), lng: num(-180, 180), pickupHours: z.string().trim().max(160) }),
+  delivery: z.object({
+    enabled: z.boolean(),
+    pickupEnabled: z.boolean(),
+    baseFee: num(0, 1000),
+    includedMiles: num(0, 500),
+    ratePerMile: num(0, 50),
+    tierBreakMiles: num(0, 2000),
+    tierRatePerMile: num(0, 50),
+    minFee: num(0, 1000),
+    maxMiles: num(1, 3000),
+    roadFactor: num(1, 2),
+    freeOver: num(0, 100000),
+    freeWithinMiles: num(0, 3000),
+  }),
+  tax: z.object({ rate: num(0, 20), taxDelivery: z.boolean() }),
+  payments: z.object({
+    paypalEnabled: z.boolean(),
+    venmoEnabled: z.boolean(),
+    cardEnabled: z.boolean(),
+    payLaterEnabled: z.boolean(),
+    mode: z.enum(["sandbox", "live"]),
+    clientId: z.string().trim().max(200),
+  }),
+});
+
+export const adminSaveSettings = createServerFn({ method: "POST" })
+  .validator(z.object({ settings: settingsSchema, newSecret: z.string().trim().max(300).optional(), clearSecret: z.boolean().optional() }))
+  .handler(async ({ data }) => {
+    requireAdmin();
+    const s = data.settings as StoreSettings;
+    // If the store address changed, refresh its coordinates.
+    const prev = await loadSettings();
+    if (s.store.address !== prev.store.address) {
+      const g = await geocodeUS(s.store.address);
+      if (!g) return { ok: false as const, error: "Could not find the store address. Check it and save again." };
+      s.store.lat = g.lat;
+      s.store.lng = g.lng;
+    }
+    await saveSettings(s);
+    if (data.clearSecret) await savePaypalSecret("");
+    else if (data.newSecret) await savePaypalSecret(data.newSecret);
+    return { ok: true as const };
+  });
+
+export const adminTestDelivery = createServerFn({ method: "POST" })
+  .validator(z.object({ address: z.string().trim().min(5).max(200), subtotal: num(0, 100000), delivery: settingsSchema.shape.delivery }))
+  .handler(async ({ data }) => {
+    requireAdmin();
+    const s = await loadSettings();
+    const g = await geocodeUS(data.address);
+    if (!g) return { ok: false as const, error: "Address not found." };
+    const q = deliveryFee(data.delivery, straightMiles(s.store, g) * data.delivery.roadFactor, data.subtotal);
+    return { ok: true as const, matched: g.matched, quote: q };
+  });
+
+export { DEFAULT_SETTINGS };

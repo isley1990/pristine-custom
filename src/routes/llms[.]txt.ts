@@ -26,7 +26,7 @@ export const Route = createFileRoute("/llms.txt")({
           "",
           "## Company",
           `- [About Us](${o}/about)`,
-          `- [Contact Us](${o}/contact): call or text +1 (954) 797-1123, email pristinecustomwheels@gmail.com`,
+          `- [Contact Us](${o}/contact): call or text +1 (954) 797-1123, email pristinecustomwheels@gmail.com, shop at 1621 91st Ct, Vero Beach, FL 32966 (store pickup available; local delivery priced by distance)`,
           `- [Shipping and Return Policy](${o}/shipping-returns)`,
           "",
           "## FAQ",

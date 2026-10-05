@@ -5,12 +5,19 @@ import { formatPrice } from "@/lib/categories";
 import { useCart } from "./cart-context";
 import { Close } from "./icons";
 
-function CheckoutQuote({ onGo }: { onGo: () => void }) {
+function CheckoutActions({ onGo, canPay }: { onGo: () => void; canPay: boolean }) {
   return (
-    <a className="pc-cta-checkout" href="/#quote" onClick={onGo}>
-      <span>Get a quote</span>
-      <span className="pc-cta-checkout__bars" aria-hidden="true" />
-    </a>
+    <>
+      {canPay ? (
+        <a className="pc-cta-buy pc-drawer__pay" href="/checkout" onClick={onGo}>
+          Checkout
+        </a>
+      ) : null}
+      <a className="pc-cta-checkout" href="/#quote" onClick={onGo}>
+        <span>{canPay ? "Or request a quote" : "Get a quote"}</span>
+        <span className="pc-cta-checkout__bars" aria-hidden="true" />
+      </a>
+    </>
   );
 }
 
@@ -65,10 +72,10 @@ export function CartDrawer() {
             <div className="pc-drawer__foot">
               <p className="pc-drawer__sub"><span>Subtotal</span><strong>{formatPrice(subtotal)}</strong></p>
               <p className="pc-drawer__note">
-                {unpriced > 0 ? `${unpriced} item${unpriced === 1 ? "" : "s"} without a listed price — we price it on your quote. ` : ""}
-                Before shipping and tax. We confirm fitment and availability before any charge.
+                {unpriced > 0 ? `${unpriced} item${unpriced === 1 ? "" : "s"} without a listed price — request a quote for ${unpriced === 1 ? "it" : "them"}. ` : ""}
+                Before delivery and tax. Pay with PayPal, Venmo or card at checkout.
               </p>
-              <CheckoutQuote onGo={() => setOpen(false)} />
+              <CheckoutActions canPay={items.length > unpriced} onGo={() => setOpen(false)} />
             </div>
           </>
         )}

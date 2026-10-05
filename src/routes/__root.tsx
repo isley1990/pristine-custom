@@ -17,6 +17,7 @@ import { CartDrawer } from "../components/site/cart-drawer";
 import { CartProvider } from "../components/site/cart-context";
 import { SiteFooter } from "../components/site/site-footer";
 import { SiteHeader } from "../components/site/site-header";
+import { adminSession } from "../lib/api/admin.functions";
 
 // Built-in defaults for any field that isn't set in app-meta.json.
 const DEFAULT_TITLE = "Pristine Custom";
@@ -125,6 +126,10 @@ function ErrorComponent({ error, reset }: { error: unknown; reset: () => void })
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   // Read the committed page metadata at build time (no runtime fetch).
   head: () => buildHead(appMeta),
+  // Admin sign-in state for the menu. Sign in/out does a full page load, so this never needs refetching.
+  loader: () => adminSession(),
+  staleTime: Infinity,
+  shouldReload: false,
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
@@ -147,11 +152,12 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const session = Route.useLoaderData();
 
   return (
     <QueryClientProvider client={queryClient}>
       <CartProvider>
-        <SiteHeader />
+        <SiteHeader signedIn={!!session?.signedIn} />
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
         <SiteFooter />

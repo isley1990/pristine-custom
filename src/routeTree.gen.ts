@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as HealthzRouteImport } from './routes/healthz'
 import { Route as HowToRouteImport } from './routes/how-to'
@@ -42,6 +43,11 @@ const AccountRoute = AccountRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CheckoutRoute = CheckoutRouteImport.update({
+  id: '/checkout',
+  path: '/checkout',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContactRoute = ContactRouteImport.update({
@@ -100,6 +106,7 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/account': typeof AccountRoute
   '/admin': typeof AdminRoute
+  '/checkout': typeof CheckoutRoute
   '/contact': typeof ContactRoute
   '/healthz': typeof HealthzRoute
   '/how-to': typeof HowToRoute
@@ -116,6 +123,7 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/account': typeof AccountRoute
   '/admin': typeof AdminRoute
+  '/checkout': typeof CheckoutRoute
   '/contact': typeof ContactRoute
   '/healthz': typeof HealthzRoute
   '/how-to': typeof HowToRoute
@@ -133,6 +141,7 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/account': typeof AccountRoute
   '/admin': typeof AdminRoute
+  '/checkout': typeof CheckoutRoute
   '/contact': typeof ContactRoute
   '/healthz': typeof HealthzRoute
   '/how-to': typeof HowToRoute
@@ -151,6 +160,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/account'
     | '/admin'
+    | '/checkout'
     | '/contact'
     | '/healthz'
     | '/how-to'
@@ -167,6 +177,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/account'
     | '/admin'
+    | '/checkout'
     | '/contact'
     | '/healthz'
     | '/how-to'
@@ -183,6 +194,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/account'
     | '/admin'
+    | '/checkout'
     | '/contact'
     | '/healthz'
     | '/how-to'
@@ -200,6 +212,7 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   AccountRoute: typeof AccountRoute
   AdminRoute: typeof AdminRoute
+  CheckoutRoute: typeof CheckoutRoute
   ContactRoute: typeof ContactRoute
   HealthzRoute: typeof HealthzRoute
   HowToRoute: typeof HowToRoute
@@ -240,6 +253,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/checkout': {
+      id: '/checkout'
+      path: '/checkout'
+      fullPath: '/checkout'
+      preLoaderRoute: typeof CheckoutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/contact': {
@@ -320,6 +340,7 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   AccountRoute: AccountRoute,
   AdminRoute: AdminRoute,
+  CheckoutRoute: CheckoutRoute,
   ContactRoute: ContactRoute,
   HealthzRoute: HealthzRoute,
   HowToRoute: HowToRoute,

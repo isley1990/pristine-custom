@@ -26,8 +26,8 @@ export const Route = createFileRoute("/llms.txt")({
           s ? `- Sales tax: ${s.tax.rate}% (Florida).` : "",
           "- Returns: unused parts in original packaging within 30 days; we cover shipping both ways if we sent the wrong part.",
           "- Every order gets a fitment check (bolt pattern, axle rating, tire size) before it ships.",
-          "",
         ].filter(Boolean);
+        facts.push("");
         const body = [
           "# Pristine Custom Wheels & Trailer Parts",
           "",

@@ -1097,3 +1097,9 @@ a.pc-drawer__name:hover { text-decoration: underline; }
 .pc-co__paycard:disabled { opacity: 0.55; cursor: not-allowed; }
 .pc-co__brands { margin: 0.5rem 0 0; color: var(--pc-muted); font-size: 0.78rem; text-align: center; }
 .pc-co__card[data-loading] { opacity: 0.4; pointer-events: none; }
+.pc-settings__status { margin: 0.75rem 0 0; padding: 0.6rem 0.8rem; border: 1px solid rgba(239, 51, 64, 0.5); border-radius: 10px; background: rgba(214, 35, 47, 0.12); font-size: 0.9rem; }
+.pc-settings__status.is-on { border-color: rgba(80, 180, 120, 0.6); background: rgba(80, 180, 120, 0.14); }
+.pc-settings__ppbtns { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.8rem; }
+.pc-settings__save { position: sticky; bottom: 0.75rem; z-index: 5; padding: 0.7rem 1rem; border-radius: 14px; }
+.pc-settings__save.is-dirty { border: 1px solid var(--pc-red-hot); background: rgba(30, 33, 39, 0.92); -webkit-backdrop-filter: var(--pc-blur); backdrop-filter: var(--pc-blur); box-shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.8); }
+.pc-admin__msg a { color: var(--pc-ink); }

@@ -7,6 +7,7 @@ import { db } from "../supabase.server";
 import { DEFAULT_SETTINGS, deliveryFee, orderNumber, straightMiles, type StoreSettings } from "../store-config";
 import { clientIdFromEnv, loadPaypalSecret, loadSettings, saveSettings, savePaypalSecret, secretFromEnv } from "../store-settings.server";
 import { geocodeUS } from "../geocode.server";
+import { paypalToken } from "../paypal.server";
 
 const T = "pristine_products";
 const ADMIN_PAGE = 50;
@@ -338,7 +339,7 @@ export const adminGetSettings = createServerFn({ method: "GET" }).handler(async 
   requireAdmin();
   const s = await loadSettings();
   const secret = await loadPaypalSecret();
-  return { settings: s, secretSet: !!secret, secretFromEnv: secretFromEnv(), clientIdFromEnv: clientIdFromEnv() };
+  return { settings: s, secretSet: !!secret, secretFromEnv: secretFromEnv(), clientIdFromEnv: clientIdFromEnv(), credsLookValid: CLIENT_ID_RE.test(s.payments.clientId) && !!secret };
 });
 
 const num = (min: number, max: number) => z.number().finite().min(min).max(max);
@@ -369,11 +370,24 @@ const settingsSchema = z.object({
   }),
 });
 
+/** PayPal REST credentials look like long tokens: Client ID starts with "A", Secret with "E". */
+const CLIENT_ID_RE = /^A[A-Za-z0-9_-]{40,}$/;
+const SECRET_RE = /^E[A-Za-z0-9_-]{40,}$/;
+const credError = (clientId: string, secret: string | null) => {
+  if (clientId && !CLIENT_ID_RE.test(clientId))
+    return "That Client ID is not a PayPal API key. Copy it from developer.paypal.com → Apps & Credentials (about 80 characters, starts with A). Do not use your email.";
+  if (secret && !SECRET_RE.test(secret))
+    return "That Secret is not a PayPal API secret. Copy it from developer.paypal.com → Apps & Credentials (about 80 characters, starts with E). Never enter your PayPal password here.";
+  return null;
+};
+
 export const adminSaveSettings = createServerFn({ method: "POST" })
   .validator(z.object({ settings: settingsSchema, newSecret: z.string().trim().max(300).optional(), clearSecret: z.boolean().optional() }))
   .handler(async ({ data }) => {
     requireAdmin();
     const s = data.settings as StoreSettings;
+    const bad = credError(clientIdFromEnv() ? "" : s.payments.clientId, data.newSecret || null);
+    if (bad) return { ok: false as const, error: bad };
     // If the store address changed, refresh its coordinates.
     const prev = await loadSettings();
     if (s.store.address !== prev.store.address) {
@@ -386,6 +400,24 @@ export const adminSaveSettings = createServerFn({ method: "POST" })
     if (data.clearSecret) await savePaypalSecret("");
     else if (data.newSecret) await savePaypalSecret(data.newSecret);
     return { ok: true as const };
+  });
+
+export const adminTestPaypal = createServerFn({ method: "POST" })
+  .validator(z.object({ mode: z.enum(["sandbox", "live"]), clientId: z.string().trim().max(200), secret: z.string().trim().max(300).optional() }))
+  .handler(async ({ data }) => {
+    requireAdmin();
+    const saved = await loadSettings();
+    const clientId = clientIdFromEnv() ? saved.payments.clientId : data.clientId;
+    const secret = data.secret || (await loadPaypalSecret());
+    if (!clientId || !secret) return { ok: false as const, error: "Enter the Client ID and Secret first." };
+    const bad = credError(clientId, data.secret || null);
+    if (bad) return { ok: false as const, error: bad };
+    try {
+      await paypalToken({ mode: data.mode, clientId, secret });
+      return { ok: true as const, message: `Connected to PayPal (${data.mode === "live" ? "Live" : "Sandbox"}). Save settings to turn payments on.` };
+    } catch {
+      return { ok: false as const, error: `PayPal rejected these keys in ${data.mode === "live" ? "Live" : "Sandbox"} mode. Check that the mode matches the tab you copied the keys from.` };
+    }
   });
 
 export const adminTestDelivery = createServerFn({ method: "POST" })

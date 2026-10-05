@@ -18,6 +18,7 @@ import {
   adminListOrders,
   adminSaveSettings,
   adminTestDelivery,
+  adminTestPaypal,
   adminUpdateOrder,
   type AdminOrder,
   type AdminProduct,
@@ -691,15 +692,18 @@ function Toggle({ label, checked, onChange, hint }: { label: string; checked: bo
 }
 
 function Settings() {
-  const [s, setS] = useState<StoreSettings | null>(null);
-  const [meta, setMeta] = useState<{ secretSet: boolean; secretFromEnv: boolean; clientIdFromEnv: boolean } | null>(null);
+  const [s, setSRaw] = useState<StoreSettings | null>(null);
+  const [dirty, setDirty] = useState(false);
+  const setS = (v: StoreSettings) => { setSRaw(v); setDirty(true); };
+  const [meta, setMeta] = useState<{ secretSet: boolean; secretFromEnv: boolean; clientIdFromEnv: boolean; credsLookValid: boolean } | null>(null);
+  const [ppMsg, setPpMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [secret, setSecret] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [test, setTest] = useState({ address: "", subtotal: 250 });
   const [testOut, setTestOut] = useState<string | null>(null);
 
-  const load = () => adminGetSettings().then((r) => { setS(r.settings); setMeta(r); });
+  const load = () => adminGetSettings().then((r) => { setSRaw(r.settings); setMeta(r); setDirty(false); });
   useEffect(() => void load(), []);
   if (!s || !meta) return <p className="pc-admin__msg">Loading settings…</p>;
 
@@ -715,6 +719,7 @@ function Settings() {
       if (!r.ok) setMsg(r.error);
       else {
         setMsg("Settings saved. Checkout uses them right away.");
+        setPpMsg(null);
         setSecret("");
         await load();
       }
@@ -724,6 +729,33 @@ function Settings() {
       setBusy(false);
     }
   };
+
+  const testPaypal = async () => {
+    setPpMsg({ ok: true, text: "Checking with PayPal…" });
+    try {
+      const r = await adminTestPaypal({ data: { mode: s.payments.mode, clientId: s.payments.clientId, secret: secret || undefined } });
+      setPpMsg(r.ok ? { ok: true, text: r.message } : { ok: false, text: r.error });
+    } catch {
+      setPpMsg({ ok: false, text: "Could not reach PayPal. Try again." });
+    }
+  };
+  const clearKeys = async () => {
+    setBusy(true);
+    try {
+      await adminSaveSettings({ data: { settings: { ...s, payments: { ...s.payments, clientId: "", paypalEnabled: false } }, clearSecret: true } });
+      setMsg("PayPal keys removed.");
+      await load();
+    } finally {
+      setBusy(false);
+    }
+  };
+  const looksLikeId = /^A[A-Za-z0-9_-]{40,}$/.test(s.payments.clientId);
+  const onlineLive = s.payments.paypalEnabled && meta.credsLookValid;
+  const statusText = onlineLive
+    ? `ON (${s.payments.mode === "live" ? "Live, real payments" : "Sandbox, test payments only"})`
+    : !s.payments.paypalEnabled
+      ? "OFF: turn on Online payments with PayPal and save."
+      : "OFF: add a valid PayPal Client ID and Secret, test the connection and save.";
 
   const runTest = async () => {
     setTestOut("Checking…");
@@ -785,6 +817,7 @@ function Settings() {
 
       <section className="pc-form pc-glass">
         <h2 className="pc-account__h">Payments</h2>
+        <p className={onlineLive ? "pc-settings__status is-on" : "pc-settings__status"}>Card, PayPal and Venmo at checkout: <strong>{dirty ? "unsaved changes" : statusText}</strong></p>
         <Toggle checked={s.payments.paypalEnabled} hint="Needs the PayPal Client ID and Secret below." label="Online payments with PayPal" onChange={(b) => up("payments", { paypalEnabled: b })} />
         <Toggle checked={s.payments.venmoEnabled} hint="US buyers; shows on supported devices." label="Venmo button" onChange={(b) => up("payments", { venmoEnabled: b })} />
         <Toggle checked={s.payments.cardEnabled} hint="Card form on the checkout page (Visa, Mastercard, Amex, Discover). Needs Advanced Credit and Debit Card Payments on your PayPal Business account; otherwise a guest card button is shown." label="Card payments" onChange={(b) => up("payments", { cardEnabled: b })} />
@@ -798,16 +831,24 @@ function Settings() {
         </div>
         <div className="pc-field">
           <label>PayPal Client ID{meta.clientIdFromEnv ? " (set in Vercel)" : ""}</label>
-          <input disabled={meta.clientIdFromEnv} onChange={(e) => up("payments", { clientId: e.target.value })} placeholder="From developer.paypal.com → Apps & Credentials" value={s.payments.clientId} />
+          <input autoComplete="off" disabled={meta.clientIdFromEnv} onChange={(e) => up("payments", { clientId: e.target.value.trim() })} placeholder="Starts with A… (about 80 characters)" spellCheck={false} value={s.payments.clientId} />
+          {s.payments.clientId && !looksLikeId && !meta.clientIdFromEnv ? <p className="pc-error">This is not a PayPal Client ID. Copy it from developer.paypal.com → Apps &amp; Credentials. Do not use your email.</p> : null}
         </div>
         <div className="pc-field">
           <label>PayPal Secret {meta.secretFromEnv ? "(set in Vercel)" : meta.secretSet ? "(saved, hidden)" : "(not set)"}</label>
-          <input autoComplete="off" disabled={meta.secretFromEnv} onChange={(e) => setSecret(e.target.value)} placeholder={meta.secretSet ? "Leave empty to keep the saved secret" : "Paste the secret"} type="password" value={secret} />
+          <input autoComplete="new-password" disabled={meta.secretFromEnv} onChange={(e) => { setSecret(e.target.value.trim()); setDirty(true); }} placeholder={meta.secretSet ? "Leave empty to keep the saved secret" : "Starts with E… (about 80 characters)"} spellCheck={false} type="password" value={secret} />
+          {secret && !/^E[A-Za-z0-9_-]{40,}$/.test(secret) ? <p className="pc-error">This is not a PayPal API Secret. Never type your PayPal password here.</p> : null}
         </div>
+        <p className="pc-admin__msg">Get both keys at <a href="https://developer.paypal.com/dashboard/applications" rel="noopener" target="_blank">developer.paypal.com → Apps &amp; Credentials</a>, signed in with your PayPal Business account. Use the Sandbox tab for test keys and the Live tab for real payments, and set the Mode to match.</p>
+        <div className="pc-settings__ppbtns">
+          <button className="pc-admin__edit" disabled={!s.payments.clientId} onClick={testPaypal} type="button">Test PayPal connection</button>
+          {meta.secretSet || s.payments.clientId ? <button className="pc-admin__delete" disabled={busy} onClick={clearKeys} type="button">Remove keys</button> : null}
+        </div>
+        {ppMsg ? <p className={ppMsg.ok ? "pc-admin__msg" : "pc-error"} role="status">{ppMsg.text}</p> : null}
       </section>
 
-      <div className="pc-settings__save">
-        {msg ? <p className="pc-admin__msg" role="status">{msg}</p> : null}
+      <div className={dirty ? "pc-settings__save is-dirty" : "pc-settings__save"}>
+        {dirty ? <p className="pc-admin__msg"><strong>You have unsaved changes.</strong> Press Save settings to apply them.</p> : msg ? <p className="pc-admin__msg" role="status">{msg}</p> : null}
         <button className="pc-admin__new" disabled={busy} onClick={save} type="button">{busy ? "Saving…" : "Save settings"}</button>
       </div>
     </div>

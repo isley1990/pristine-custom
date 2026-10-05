@@ -8,6 +8,10 @@ export async function paypalConfig() {
   return { mode: s.payments.mode, clientId: s.payments.clientId, secret, ready: !!(s.payments.clientId && secret) };
 }
 
+export async function paypalToken(cfg: { mode: "sandbox" | "live"; clientId: string; secret: string }) {
+  return token(cfg);
+}
+
 async function token(cfg: { mode: "sandbox" | "live"; clientId: string; secret: string }) {
   const res = await fetch(`${base(cfg.mode)}/v1/oauth2/token`, {
     method: "POST",

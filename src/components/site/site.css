@@ -1109,3 +1109,4 @@ a.pc-drawer__name:hover { text-decoration: underline; }
 .pc-cathero__tip, .pc-product-page__tip { margin: 0.5rem 0 0; color: var(--pc-ink-2); font-size: 0.92rem; line-height: 1.5; }
 .pc-cathero__tip strong, .pc-product-page__tip strong { color: var(--pc-ink); }
 @media (max-width: 560px) { .pc-cathero__tip { grid-column: 1 / -1; font-size: 0.85rem; } }
+.pc-sr { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }

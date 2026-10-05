@@ -10,6 +10,8 @@ import {
 import type { ReactNode } from "react";
 
 import appCss from "../styles.css?url";
+import barlow400 from "@fontsource/barlow/files/barlow-latin-400-normal.woff2?url";
+import saira800 from "@fontsource/saira/files/saira-latin-800-italic.woff2?url";
 // Page metadata (title, description, favicon, social image), read at build time.
 import appMetaJson from "../app-meta.json";
 import { scrollScrubTheme } from "../scroll-scrub-scenes";
@@ -66,6 +68,8 @@ function buildHead(meta: AppMeta) {
       ...(ogVideo ? [{ property: "og:video", content: ogVideo }] : []),
     ],
     links: [
+      { rel: "preload", href: barlow400, as: "font", type: "font/woff2", crossOrigin: "anonymous" as const },
+      { rel: "preload", href: saira800, as: "font", type: "font/woff2", crossOrigin: "anonymous" as const },
       { rel: "stylesheet", href: appCss },
       { rel: "icon", href: "/favicon.ico", sizes: "any" },
       { rel: "icon", type: "image/png", sizes: "32x32", href: "/assets/brand/icon-32.png" },

@@ -55,7 +55,7 @@ export function AddToCart({ product, compact = false }: { product: ProductCard; 
   }, [done]);
   return (
     <button
-      aria-label={`Add ${product.name} to cart`}
+      aria-label={`Add to cart: ${product.name}`}
       className={compact ? "pc-add-cart pc-add-cart--compact" : "pc-add-cart"}
       data-done={done ? "true" : undefined}
       onClick={() => {

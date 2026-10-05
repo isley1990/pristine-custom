@@ -93,7 +93,10 @@ function CategoryPage() {
           total={list.total}
         />
         {list.items.length ? (
-          <ProductGrid eagerCount={4} items={list.items} />
+          <>
+            <h2 className="pc-sr">{cat.name} parts</h2>
+            <ProductGrid eagerCount={4} items={list.items} />
+          </>
         ) : (
           <div className="pc-empty pc-glass">
             <h2>No parts found</h2>

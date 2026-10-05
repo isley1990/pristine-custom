@@ -978,3 +978,9 @@ a.pc-drawer__name:hover { text-decoration: underline; }
 @media (max-width: 700px) { .pc-account { grid-template-columns: 1fr; } }
 .pc-account__go { display: flex; align-items: center; justify-content: center; width: 100%; margin-top: 1rem; text-decoration: none; }
 .pc-account__go:disabled { opacity: 0.6; cursor: progress; }
+@media (max-width: 480px) {
+  .pc-header__bar { gap: 0.4rem; }
+  .pc-header__logo img { height: 50px; width: auto; }
+  .pc-callbtn, .pc-header__burger { width: 40px; height: 40px; }
+  .pc-cartbtn { height: 40px; padding: 0 0.6rem; }
+}

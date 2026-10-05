@@ -2,16 +2,16 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 
 import { PageShell } from "@/components/site/page-shell";
-import { breadcrumbJsonLd, pageHead } from "@/lib/site";
+import { breadcrumbJsonLd, orgJsonLd, pageHead, SITE } from "@/lib/site";
 import { submitContact } from "@/lib/api/quote.functions";
 
 export const Route = createFileRoute("/contact")({
   head: () =>
     pageHead({
       title: "Contact Us",
-      description: "Questions about a trailer part, fitment or a return? Send Pristine Custom a message and we reply by phone or email.",
+      description: "Call or text Pristine Custom at (954) 797-1123, email pristinecustomwheels@gmail.com, or send a message about a trailer part, fitment or a return.",
       path: "/contact",
-      jsonLd: [breadcrumbJsonLd([{ name: "Home", path: "/" }, { name: "Contact Us", path: "/contact" }])],
+      jsonLd: [orgJsonLd(), breadcrumbJsonLd([{ name: "Home", path: "/" }, { name: "Contact Us", path: "/contact" }])],
     }),
   component: Contact,
 });
@@ -59,6 +59,15 @@ function Contact() {
     <PageShell accent="Us" lede="Questions about an order, fitment or a return. Send a message and we reply by phone or email." title="Contact">
       <div className="pc-contact">
         <aside className="pc-contact__side">
+          <div className="pc-glass pc-contact__card pc-contact__direct">
+            <img alt="" height={44} src="/assets/icons/quality.png" width={44} />
+            <div>
+              <h2>Talk to the parts desk</h2>
+              <p><a className="pc-contact__big" href={SITE.phoneHref}>{SITE.phoneDisplay}</a></p>
+              <p><a href={`mailto:${SITE.email}`}>{SITE.email}</a></p>
+              <p>Call or text with a part number, your bolt pattern or a photo of the old part.</p>
+            </div>
+          </div>
           <div className="pc-glass pc-contact__card">
             <img alt="" height={44} src="/assets/icons/quality.png" width={44} />
             <div>

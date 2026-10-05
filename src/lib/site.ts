@@ -6,6 +6,10 @@ export const SITE = {
   description:
     "Trailer parts, custom trailer wheels and tires, axles, brakes, lights and boat trailer parts. Search 2,300+ parts by part number and request a fitment-checked quote.",
   logo: "/assets/brand/logo_main.webp",
+  phone: "+1-954-797-1123",
+  phoneHref: "tel:+19547971123",
+  phoneDisplay: "(954) 797-1123",
+  email: "pristinecustomwheels@gmail.com",
   ogImage: "https://d2ol7oe51mr4n9.cloudfront.net/user_3Jqhc1Ufis49sz6GBGQdw7AizU2/1a61c9d8-8092-4cf3-8763-da4663af618e.jpg",
 };
 
@@ -48,6 +52,9 @@ export const orgJsonLd = () => ({
   image: SITE.ogImage,
   description: SITE.description,
   priceRange: "$$",
+  telephone: SITE.phone,
+  email: SITE.email,
+  contactPoint: [{ "@type": "ContactPoint", contactType: "sales", telephone: SITE.phone, email: SITE.email, areaServed: "US", availableLanguage: ["English", "Spanish"] }],
   knowsAbout: [
     "Trailer wheels", "Trailer tires", "Trailer axles", "Trailer brakes", "Boat trailer parts",
     "Trailer lights and wiring", "Leaf springs", "Trailer couplers", "Trailer jacks", "Trailer fenders",

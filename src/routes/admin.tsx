@@ -35,6 +35,7 @@ function Admin() {
 }
 
 function Login({ configured, onDone }: { configured: boolean; onDone: () => void }) {
+  const [email, setEmail] = useState("");
   const [key, setKey] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +44,7 @@ function Login({ configured, onDone }: { configured: boolean; onDone: () => void
     setBusy(true);
     setError(null);
     try {
-      const res = await adminLogin({ data: { key } });
+      const res = await adminLogin({ data: { email: email.trim(), key } });
       if (res.ok) onDone();
       else setError(res.error);
     } catch {
@@ -59,11 +60,15 @@ function Login({ configured, onDone }: { configured: boolean; onDone: () => void
           <h1 className="pc-account__h">Store admin</h1>
           {!configured ? <p className="pc-error">Set the ADMIN_KEY environment variable in Vercel, then redeploy.</p> : null}
           <div className="pc-field">
-            <label htmlFor="admin-key">Admin key</label>
-            <input autoComplete="current-password" autoFocus id="admin-key" onChange={(e) => setKey(e.target.value)} type="password" value={key} />
+            <label htmlFor="admin-email">Email</label>
+            <input autoComplete="username" autoFocus id="admin-email" onChange={(e) => setEmail(e.target.value)} type="email" value={email} />
+          </div>
+          <div className="pc-field">
+            <label htmlFor="admin-key">Password</label>
+            <input autoComplete="current-password" id="admin-key" onChange={(e) => setKey(e.target.value)} type="password" value={key} />
           </div>
           {error ? <p className="pc-error" role="alert">{error}</p> : null}
-          <button className="pc-cta-lookup" disabled={busy || !key} type="submit">{busy ? "Signing in" : "Sign in"}</button>
+          <button className="pc-cta-lookup" disabled={busy || !key || !email.trim()} type="submit">{busy ? "Signing in" : "Sign in"}</button>
         </form>
       </div>
     </main>

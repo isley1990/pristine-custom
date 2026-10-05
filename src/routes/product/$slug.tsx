@@ -111,7 +111,7 @@ function ProductPage() {
             <h1 className="pc-product-page__title">{p.name}</h1>
             <p className="pc-product-page__sku">Part #{p.partNumber}</p>
             <p className={p.price == null ? "pc-product-page__price pc-product-page__price--call" : "pc-product-page__price"}>
-              {p.price == null ? "Call for price" : formatPrice(p.price)}
+              {p.price == null ? <a href={SITE.phoneHref}>Call for price · {SITE.phoneDisplay}</a> : formatPrice(p.price)}
             </p>
             <AddWithQty />
             <p className="pc-product-page__note">

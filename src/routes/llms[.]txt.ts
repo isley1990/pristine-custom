@@ -26,7 +26,7 @@ export const Route = createFileRoute("/llms.txt")({
           "",
           "## Company",
           `- [About Us](${o}/about)`,
-          `- [Contact Us](${o}/contact)`,
+          `- [Contact Us](${o}/contact): call or text +1 (954) 797-1123, email pristinecustomwheels@gmail.com`,
           `- [Shipping and Return Policy](${o}/shipping-returns)`,
           "",
           "## FAQ",

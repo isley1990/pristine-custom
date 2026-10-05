@@ -13,7 +13,7 @@ export const FAQS = [
   },
   {
     q: "Why do some parts say Call for price?",
-    a: "Prices on some parts change with supplier costs and freight. Add them to your cart and send a quote request. We reply with the current price, fitment confirmation and shipping.",
+    a: "Prices on some parts change with supplier costs and freight. Call or text (954) 797-1123, or add them to your cart and send a quote request. We reply with the current price, fitment confirmation and shipping.",
   },
   {
     q: "Do you sell complete trailer axles and mounted tire and wheel assemblies?",

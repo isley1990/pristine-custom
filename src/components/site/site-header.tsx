@@ -5,6 +5,8 @@ import { useNavigate } from "@tanstack/react-router";
 import { quickSearch, type ProductCard } from "@/lib/api/products.functions";
 import { formatPrice } from "@/lib/categories";
 
+import { SITE } from "@/lib/site";
+
 import { useCart } from "./cart-context";
 import { AddToCart } from "./ctas";
 import { CartIcon, Close, MenuIcon, SearchIcon, UserIcon } from "./icons";
@@ -117,6 +119,14 @@ function SearchBox() {
   );
 }
 
+function PhoneIcon() {
+  return (
+    <svg aria-hidden="true" fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="18">
+      <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z" />
+    </svg>
+  );
+}
+
 function CartButton() {
   const { count, subtotal, setOpen } = useCart();
   return (
@@ -146,6 +156,10 @@ export function SiteHeader() {
         <div className="pc-header__main">
           <div className="pc-header__top">
             <SearchBox />
+            <a aria-label={`Call ${SITE.phoneDisplay}`} className="pc-callbtn" href={SITE.phoneHref}>
+              <PhoneIcon />
+              <span>{SITE.phoneDisplay}</span>
+            </a>
             <CartButton />
             <button
               aria-expanded={menuOpen}

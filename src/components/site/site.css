@@ -961,3 +961,20 @@ a.pc-drawer__name:hover { text-decoration: underline; }
 .pc-featured .pc-pgrid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
 @media (max-width: 560px) { .pc-featured .pc-pgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 #fitment { padding-top: clamp(1.25rem, 2.5vw, 2rem); }
+
+/* ---------- Contact details ---------- */
+.pc-callbtn { display: inline-flex; align-items: center; gap: 0.45rem; height: 44px; padding: 0 0.85rem; border: 1px solid var(--pc-line-2); border-radius: 12px; background: rgba(255, 255, 255, 0.06); color: var(--pc-ink); text-decoration: none; white-space: nowrap; font-family: var(--pc-font-display); font-style: italic; font-weight: 700; font-size: 0.9rem; letter-spacing: 0.02em; }
+.pc-callbtn:hover { border-color: var(--pc-red-hot); }
+.pc-callbtn svg { color: var(--pc-red-hot); }
+@media (max-width: 1180px) { .pc-callbtn span { display: none; } .pc-callbtn { width: 44px; padding: 0; justify-content: center; } }
+.pc-footer__contact { margin-top: 0.9rem !important; }
+.pc-footer__contact a { color: var(--pc-ink); }
+.pc-contact__big { font-family: var(--pc-font-display); font-style: italic; font-weight: 800; font-size: 1.5rem; color: var(--pc-ink); text-decoration: none; }
+.pc-contact__direct a { color: var(--pc-ink); }
+.pc-product-page__price--call a { color: inherit; text-decoration: none; border-bottom: 2px solid var(--pc-red-hot); }
+@media (max-width: 980px) { .pc-callbtn { margin-left: auto; } .pc-callbtn + .pc-cartbtn { margin-left: 0; } }
+.pc-account { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 1100px) { .pc-account { grid-template-columns: 1fr 1fr; } .pc-account__signin { grid-column: 1 / -1; } }
+@media (max-width: 700px) { .pc-account { grid-template-columns: 1fr; } }
+.pc-account__go { display: flex; align-items: center; justify-content: center; width: 100%; margin-top: 1rem; text-decoration: none; }
+.pc-account__go:disabled { opacity: 0.6; cursor: progress; }

@@ -1,4 +1,5 @@
 import { categories } from "@/lib/categories";
+import { SITE } from "@/lib/site";
 
 export function SiteFooter() {
   return (
@@ -8,6 +9,10 @@ export function SiteFooter() {
           <div className="pc-footer__brand">
             <img alt="Pristine Custom Wheels and Trailer Parts" className="pc-footer__logo" src="/assets/brand/logo_main.webp" width={260} height={95} />
             <p className="pc-footer__tag">Wheels, tires, trailer parts and accessories. Matched to your trailer, quoted by real people.</p>
+            <ul className="pc-footer__contact">
+              <li><a href={SITE.phoneHref}>Call or text {SITE.phoneDisplay}</a></li>
+              <li><a href={`mailto:${SITE.email}`}>{SITE.email}</a></li>
+            </ul>
           </div>
           <nav aria-label="Footer">
             <h2>Menu</h2>

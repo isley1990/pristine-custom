@@ -41,11 +41,18 @@ export const adminSession = createServerFn({ method: "GET" }).handler(async () =
   configured: !!process.env.ADMIN_KEY,
 }));
 
+/** Admin username: ADMIN_EMAIL if set, otherwise the store's business email. */
+const adminEmail = () => (process.env.ADMIN_EMAIL || "pristinecustomwheels@gmail.com").trim().toLowerCase();
+
 export const adminLogin = createServerFn({ method: "POST" })
-  .validator(z.object({ key: z.string().min(1).max(200) }))
+  .validator(z.object({ email: z.string().trim().max(200).optional(), key: z.string().min(1).max(200) }))
   .handler(async ({ data }) => {
     if (!process.env.ADMIN_KEY) return { ok: false as const, error: "Set ADMIN_KEY in the hosting settings first." };
-    if (!checkPassword(data.key)) return { ok: false as const, error: "That key is not correct." };
+    const emailOk = data.email === undefined || data.email.toLowerCase() === adminEmail();
+    if (!checkPassword(data.key) || !emailOk) {
+      await new Promise((r) => setTimeout(r, 700)); // slow down guessing
+      return { ok: false as const, error: data.email === undefined ? "That key is not correct." : "Email or password is not correct." };
+    }
     startSession();
     return { ok: true as const };
   });

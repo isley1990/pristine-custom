@@ -237,7 +237,7 @@ function Checkout() {
           },
           fonts: [{ cssSrc: "https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&display=swap" }],
         });
-        pe = elements.create("payment", { layout: "tabs", fields: { billingDetails: { email: "never", phone: "never" } } });
+        pe = elements.create("payment", { layout: "tabs", wallets: { link: "never" }, fields: { billingDetails: { email: "never", phone: "never" } } });
         pe.on("ready", () => !cancelled && setStripeState("ready"));
         pe.on("loaderror", () => !cancelled && setStripeState("error"));
         pe.mount(stripeMount.current);

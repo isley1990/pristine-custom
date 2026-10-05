@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { friendlyError } from "@/lib/errors";
 
 import { submitQuote } from "@/lib/api/quote.functions";
 
@@ -62,7 +63,7 @@ export function QuoteSection() {
       clear();
     } catch (err) {
       setStatus("idle");
-      setError(err instanceof Error && err.message ? err.message : "Something went wrong. Please try again.");
+      setError(friendlyError(err));
     }
   };
 
@@ -145,8 +146,8 @@ export function QuoteSection() {
               />
             </div>
             <div className="pc-hp" aria-hidden="true">
-              <label htmlFor="q-website">Website</label>
-              <input autoComplete="off" id="q-website" onChange={(e) => setWebsite(e.target.value)} tabIndex={-1} value={website} />
+              <label htmlFor="q-hpx">Leave this empty</label>
+              <input autoComplete="off" id="q-hpx" name="pc_hpx" onChange={(e) => setWebsite(e.target.value)} tabIndex={-1} value={website} />
             </div>
             {items.length > 0 ? <p className="pc-hint" style={{ marginTop: "1rem" }}>{items.length} cart item{items.length === 1 ? "" : "s"} will be included.</p> : null}
             {error ? <p className="pc-error" role="alert">{error}</p> : null}

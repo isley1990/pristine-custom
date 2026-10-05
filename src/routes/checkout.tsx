@@ -5,6 +5,7 @@ import { useCart } from "@/components/site/cart-context";
 import { PageShell } from "@/components/site/page-shell";
 import { captureCheckoutOrder, createCheckoutOrder, getCheckoutConfig, quoteCheckout } from "@/lib/api/checkout.functions";
 import { formatPrice } from "@/lib/categories";
+import { friendlyError } from "@/lib/errors";
 import { pageHead, SITE } from "@/lib/site";
 
 export const Route = createFileRoute("/checkout")({
@@ -20,9 +21,19 @@ type Done = { orderNo: string; total: number; method: Method };
 /* ---------- PayPal JS SDK (loaded once, only when online payments are on) ---------- */
 
 type PayPalButtons = { isEligible: () => boolean; render: (el: HTMLElement) => Promise<void>; close?: () => void };
+type CardField = { render: (el: HTMLElement) => Promise<void>; close?: () => void };
+type CardFields = {
+  isEligible: () => boolean;
+  NameField: (o?: Record<string, unknown>) => CardField;
+  NumberField: (o?: Record<string, unknown>) => CardField;
+  ExpiryField: (o?: Record<string, unknown>) => CardField;
+  CVVField: (o?: Record<string, unknown>) => CardField;
+  submit: (o?: Record<string, unknown>) => Promise<void>;
+};
 type PayPalNS = {
   FUNDING: Record<"PAYPAL" | "VENMO" | "CARD", string>;
   Buttons: (opts: Record<string, unknown>) => PayPalButtons;
+  CardFields?: (opts: Record<string, unknown>) => CardFields;
 };
 declare global {
   interface Window {
@@ -36,7 +47,13 @@ function loadPayPal(clientId: string, buyerCountry: boolean): Promise<PayPalNS> 
   if (sdkPromise) return sdkPromise;
   sdkPromise = new Promise((resolve, reject) => {
     const s = document.createElement("script");
-    const params = new URLSearchParams({ "client-id": clientId, currency: "USD", intent: "capture", components: "buttons,funding-eligibility", "enable-funding": "venmo,card" });
+    const params = new URLSearchParams({
+      "client-id": clientId,
+      currency: "USD",
+      intent: "capture",
+      components: "buttons,card-fields,funding-eligibility",
+      "enable-funding": "venmo,card",
+    });
     if (buyerCountry) params.set("buyer-country", "US");
     s.src = `https://www.paypal.com/sdk/js?${params}`;
     s.async = true;
@@ -49,6 +66,14 @@ function loadPayPal(clientId: string, buyerCountry: boolean): Promise<PayPalNS> 
   });
   return sdkPromise;
 }
+
+/* Card input styling inside PayPal's secure iframes (matches the site's dark inputs). */
+const CARD_STYLE = {
+  input: { "font-size": "16px", "font-family": "Barlow, system-ui, sans-serif", color: "#eef0f3", padding: "12px 14px", background: "#2b3038", border: "1px solid rgba(255,255,255,0.18)", "border-radius": "12px" },
+  "input:focus": { border: "1px solid #ef3340", "box-shadow": "0 0 0 3px rgba(239,51,64,0.25)" },
+  ".invalid": { color: "#ff7a82", border: "1px solid #ff7a82" },
+  "::placeholder": { color: "#8d949f" },
+};
 
 const STATES = ["FL", "GA", "AL", "SC", "NC", "TN", "MS", "LA", "TX", "VA"];
 
@@ -114,59 +139,71 @@ function Checkout() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  /* ---------- PayPal / Venmo / Card buttons ---------- */
+  /* ---------- PayPal / Venmo buttons + direct card form ---------- */
   const ppRefs = { paypal: useRef<HTMLDivElement>(null), venmo: useRef<HTMLDivElement>(null), card: useRef<HTMLDivElement>(null) };
+  const cardRefs = { name: useRef<HTMLDivElement>(null), number: useRef<HTMLDivElement>(null), expiry: useRef<HTMLDivElement>(null), cvv: useRef<HTMLDivElement>(null) };
+  const cardFieldsRef = useRef<CardFields | null>(null);
   const [ppState, setPpState] = useState<"off" | "loading" | "ready" | "error">(cfg.payments.online ? "loading" : "off");
   const [venmoEligible, setVenmoEligible] = useState(false);
+  const [cardMode, setCardMode] = useState<"fields" | "button" | "none">("none");
   const blocked = !quote || !!quote.blocked || quoting;
+
+  const capture = async (orderID: string, method: Method) => {
+    setBusy(true);
+    try {
+      const r = await captureCheckoutOrder({ data: { paypalOrderId: orderID } });
+      finish(r.orderNo, method);
+    } catch (e) {
+      setError(friendlyError(e, "Payment could not be completed. You were not charged; try again or call us."));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const createPaypalOrder = async (method: Method) => {
+    try {
+      const res = await placeOrder(method);
+      if (res.kind !== "paypal") throw new Error("Unexpected order type");
+      return res.paypalOrderId;
+    } catch (e) {
+      setError(friendlyError(e, "Could not start the payment. Check your details and try again."));
+      throw e;
+    }
+  };
 
   useEffect(() => {
     if (!cfg.payments.online || done || !items.length) return;
     let cancelled = false;
-    const rendered: PayPalButtons[] = [];
+    const rendered: { close?: () => void }[] = [];
     loadPayPal(cfg.payments.clientId, cfg.payments.mode === "sandbox")
       .then((pp) => {
         if (cancelled) return;
-        const sources: [keyof typeof ppRefs, string, boolean][] = [
+        const guard = (_d: unknown, actions: { reject: () => Promise<void>; resolve: () => Promise<void> }) => {
+          const v = live.current;
+          const msg = v.contactError() ?? v.quote?.blocked ?? null;
+          if (msg) {
+            setError(msg);
+            return actions.reject();
+          }
+          setError(null);
+          return actions.resolve();
+        };
+        const wallets: [("paypal" | "venmo"), string, boolean][] = [
           ["paypal", pp.FUNDING.PAYPAL, cfg.payments.paypal],
           ["venmo", pp.FUNDING.VENMO, cfg.payments.venmo],
-          ["card", pp.FUNDING.CARD, cfg.payments.card],
         ];
-        for (const [key, funding, enabled] of sources) {
+        for (const [key, funding, enabled] of wallets) {
           const el = ppRefs[key].current;
           if (!enabled || !el) continue;
           el.innerHTML = "";
           const btn = pp.Buttons({
             fundingSource: funding,
-            style: { layout: "vertical", shape: "rect", height: 46, ...(key === "paypal" ? { color: "gold" } : key === "venmo" ? { color: "blue" } : {}) },
-            onClick: (_d: unknown, actions: { reject: () => Promise<void>; resolve: () => Promise<void> }) => {
-              const v = live.current;
-              const msg = v.contactError() ?? v.quote?.blocked ?? null;
-              if (msg) {
-                setError(msg);
-                return actions.reject();
-              }
-              setError(null);
-              return actions.resolve();
-            },
-            createOrder: async () => {
-              const res = await placeOrder(key === "card" ? "card" : key);
-              if (res.kind !== "paypal") throw new Error("Unexpected order type");
-              return res.paypalOrderId;
-            },
-            onApprove: async (d: { orderID: string }) => {
-              setBusy(true);
-              try {
-                const r = await captureCheckoutOrder({ data: { paypalOrderId: d.orderID } });
-                finish(r.orderNo, key === "card" ? "card" : key);
-              } catch (e) {
-                setError((e as Error).message || "Payment could not be completed.");
-              } finally {
-                setBusy(false);
-              }
-            },
+            style: { layout: "vertical", shape: "rect", height: 46, color: key === "paypal" ? "gold" : "blue" },
+            onClick: guard,
+            createOrder: () => createPaypalOrder(key),
+            onApprove: (d: { orderID: string }) => capture(d.orderID, key),
             onCancel: () => setError("Payment cancelled. Your cart is still here."),
-            onError: () => setError("Payment could not start. Check your details and try again, or call us."),
+            onError: () => setError((prev) => prev ?? "Payment could not start. Check your details and try again, or call us."),
           });
           if (key === "venmo") setVenmoEligible(btn.isEligible());
           if (btn.isEligible()) {
@@ -174,15 +211,81 @@ function Checkout() {
             void btn.render(el);
           }
         }
+
+        if (cfg.payments.card) {
+          // Preferred: card number typed right on our page (PayPal-hosted secure fields, PCI handled by PayPal).
+          const cf = pp.CardFields?.({
+            style: CARD_STYLE,
+            createOrder: () => createPaypalOrder("card"),
+            onApprove: (d: { orderID: string; liabilityShift?: string }) => {
+              if (d.liabilityShift === "NO" || d.liabilityShift === "UNKNOWN") {
+                setError("Your bank could not verify this card. Try another card or pay with PayPal.");
+                return;
+              }
+              return capture(d.orderID, "card");
+            },
+            onError: () => setError((prev) => prev ?? "The card could not be charged. Check the card details or try another card."),
+          });
+          if (cf && cf.isEligible() && cardRefs.number.current) {
+            cardFieldsRef.current = cf;
+            const parts: [CardField, HTMLDivElement | null][] = [
+              [cf.NameField({ placeholder: "Name on card" }), cardRefs.name.current],
+              [cf.NumberField({ placeholder: "Card number" }), cardRefs.number.current],
+              [cf.ExpiryField({ placeholder: "MM / YY" }), cardRefs.expiry.current],
+              [cf.CVVField({ placeholder: "CVV" }), cardRefs.cvv.current],
+            ];
+            for (const [f, el] of parts) {
+              if (!el) continue;
+              el.innerHTML = "";
+              rendered.push(f);
+              void f.render(el);
+            }
+            setCardMode("fields");
+          } else {
+            // Fallback: PayPal's guest "Debit or Credit Card" button (no PayPal account needed).
+            const el = ppRefs.card.current;
+            const btn = pp.Buttons({
+              fundingSource: pp.FUNDING.CARD,
+              style: { layout: "vertical", shape: "rect", height: 46 },
+              onClick: guard,
+              createOrder: () => createPaypalOrder("card"),
+              onApprove: (d: { orderID: string }) => capture(d.orderID, "card"),
+              onError: () => setError((prev) => prev ?? "The card could not be charged. Try again or use another method."),
+            });
+            if (el && btn.isEligible()) {
+              el.innerHTML = "";
+              rendered.push(btn);
+              void btn.render(el);
+              setCardMode("button");
+            }
+          }
+        }
         setPpState("ready");
       })
       .catch(() => !cancelled && setPpState("error"));
     return () => {
       cancelled = true;
+      cardFieldsRef.current = null;
       rendered.forEach((b) => b.close?.());
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cfg.payments.online, done, items.length === 0]);
+
+  const payCard = async () => {
+    const msg = contactError() ?? quote?.blocked ?? null;
+    if (msg) return setError(msg);
+    const cf = cardFieldsRef.current;
+    if (!cf) return;
+    setError(null);
+    setBusy(true);
+    try {
+      await cf.submit();
+    } catch {
+      setError((prev) => prev ?? "Check the card number, expiry and CVV, then try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const payLater = async () => {
     const msg = contactError() ?? quote?.blocked ?? null;
@@ -193,7 +296,7 @@ function Checkout() {
       const res = await placeOrder("pay_later");
       finish(res.orderNo, "pay_later");
     } catch (e) {
-      setError((e as Error).message || "Could not place the order.");
+      setError(friendlyError(e, "Could not place the order. Try again or call us."));
     } finally {
       setBusy(false);
     }
@@ -237,7 +340,7 @@ function Checkout() {
   const setA = (k: keyof typeof addr) => (e: { target: { value: string } }) => setAddr((a) => ({ ...a, [k]: e.target.value }));
 
   return (
-    <PageShell accent="out" lede="Pay with PayPal, Venmo or card. Delivery is priced by distance from our Vero Beach shop, or pick up for free." title="Check">
+    <PageShell accent="out" lede="Pay by card, PayPal or Venmo. Delivery is priced by distance from our Vero Beach shop, or pick up for free." title="Check">
       <div className="pc-co">
         <div className="pc-co__main">
           <section className="pc-form pc-glass" aria-labelledby="co-contact">
@@ -256,7 +359,7 @@ function Checkout() {
                 <input autoComplete="tel" id="co-phone" inputMode="tel" onChange={set("phone")} type="tel" value={contact.phone} />
               </div>
             </div>
-            <input aria-hidden="true" autoComplete="off" className="pc-hp" name="website" onChange={(e) => setWebsite(e.target.value)} tabIndex={-1} value={website} />
+            <input aria-hidden="true" autoComplete="off" className="pc-hp" name="pc_hpx" onChange={(e) => setWebsite(e.target.value)} tabIndex={-1} value={website} />
           </section>
 
           <section className="pc-form pc-glass" aria-labelledby="co-ful">
@@ -331,11 +434,26 @@ function Checkout() {
                   {ppState === "error" ? <p className="pc-error">Online payment could not load. Refresh the page or use another option.</p> : null}
                   <div ref={ppRefs.paypal} />
                   <div ref={ppRefs.venmo} />
-                  <div ref={ppRefs.card} />
                   {ppState === "ready" && cfg.payments.venmo && !venmoEligible ? <p className="pc-co__hint">Venmo appears on supported phones and US accounts.</p> : null}
+                  {cfg.payments.card ? (
+                    <div className="pc-co__card" data-loading={cardMode === "none" ? "true" : undefined} hidden={cardMode === "button" || ppState === "error"}>
+                      <p className="pc-co__or"><span>or pay with a card</span></p>
+                      <div className="pc-co__cardgrid">
+                        <div className="pc-co__cf pc-co__cf--wide" ref={cardRefs.name} />
+                        <div className="pc-co__cf pc-co__cf--wide" ref={cardRefs.number} />
+                        <div className="pc-co__cf" ref={cardRefs.expiry} />
+                        <div className="pc-co__cf" ref={cardRefs.cvv} />
+                      </div>
+                      <button className="pc-cta-buy pc-co__btn pc-co__paycard" disabled={busy || blocked} onClick={payCard} type="button">
+                        {busy ? "Processing…" : `Pay ${quote ? formatPrice(quote.total) : ""} with card`}
+                      </button>
+                      <p className="pc-co__brands">Visa · Mastercard · American Express · Discover</p>
+                    </div>
+                  ) : null}
+                  <div ref={ppRefs.card} />
                 </>
               ) : (
-                <p className="pc-co__hint">Online payment (PayPal, Venmo, card) is being set up. You can place the order now and pay at pickup or by phone.</p>
+                <p className="pc-co__hint">Card, PayPal and Venmo payments turn on as soon as the store connects its PayPal account. You can place the order now and pay at pickup or by phone.</p>
               )}
               {cfg.payments.payLater ? (
                 <button className="pc-cta-browse pc-co__later" disabled={busy || blocked} onClick={payLater} type="button">

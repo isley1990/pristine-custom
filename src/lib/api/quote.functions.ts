@@ -46,8 +46,8 @@ const quoteInput = z.object({
 export const submitQuote = createServerFn({ method: "POST" })
   .validator(quoteInput)
   .handler(async ({ data }) => {
-    // Honeypot: bots fill the hidden field; pretend success and store nothing.
-    if (data.website) return { ok: true as const, id: null };
+    // Hidden anti-bot field. Browser autofill can fill it too, so never drop the request: just flag it.
+    const flag = data.website ? "[hidden field filled — check before replying] " : "";
     if (!data.phone && !data.email) throw new Error("Add a phone number or an email so we can reply.");
     if (data.email && !z.string().email().safeParse(data.email).success) {
       throw new Error("That email address doesn't look right.");
@@ -60,7 +60,7 @@ export const submitQuote = createServerFn({ method: "POST" })
         email: data.email || null,
         category: data.category,
         items: data.items,
-        details: data.details || null,
+        details: flag + data.details || null,
       })
       .select("id")
       .single();
@@ -83,7 +83,7 @@ const contactInput = z.object({
 export const submitContact = createServerFn({ method: "POST" })
   .validator(contactInput)
   .handler(async ({ data }) => {
-    if (data.website) return { ok: true as const };
+    const flag = data.website ? "[hidden field filled — check before replying] " : "";
     if (!data.phone && !data.email) throw new Error("Add a phone number or an email so we can reply.");
     if (data.email && !z.string().email().safeParse(data.email).success) {
       throw new Error("That email address doesn't look right.");
@@ -93,7 +93,7 @@ export const submitContact = createServerFn({ method: "POST" })
       email: data.email || null,
       phone: data.phone || null,
       topic: data.topic,
-      message: data.message,
+      message: flag + data.message,
     });
     if (error) {
       console.error(error);

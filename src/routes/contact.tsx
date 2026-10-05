@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { friendlyError } from "@/lib/errors";
 import { useState, type FormEvent } from "react";
 
 import { PageShell } from "@/components/site/page-shell";
@@ -49,7 +50,7 @@ function Contact() {
       await submitContact({ data: { name: name.trim(), email: email.trim(), phone: phone.trim(), topic, message: message.trim(), website } });
       setSent(true);
     } catch (err) {
-      setError(err instanceof Error && err.message ? err.message : "Something went wrong. Please try again.");
+      setError(friendlyError(err));
     } finally {
       setBusy(false);
     }
@@ -126,8 +127,8 @@ function Contact() {
               <textarea id="c-msg" onChange={(e) => setMessage(e.target.value)} placeholder="How can we help?" value={message} />
             </div>
             <div className="pc-hp" aria-hidden="true">
-              <label htmlFor="c-website">Website</label>
-              <input autoComplete="off" id="c-website" onChange={(e) => setWebsite(e.target.value)} tabIndex={-1} value={website} />
+              <label htmlFor="c-hpx">Leave this empty</label>
+              <input autoComplete="off" id="c-hpx" name="pc_hpx" onChange={(e) => setWebsite(e.target.value)} tabIndex={-1} value={website} />
             </div>
             {error ? <p className="pc-error" role="alert">{error}</p> : null}
             <SendMessage busy={busy} />

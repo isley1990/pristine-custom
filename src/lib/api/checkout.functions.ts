@@ -140,7 +140,7 @@ const customerSchema = z.object({
 const createInput = quoteInput.extend({
   customer: customerSchema,
   method: z.enum(["paypal", "venmo", "card", "pay_later"]),
-  website: z.string().max(0).optional().default(""), // honeypot
+  website: z.string().max(300).optional().default(""), // hidden anti-bot field; flagged, never rejected (autofill can fill it)
 });
 
 export const createCheckoutOrder = createServerFn({ method: "POST" })
@@ -163,6 +163,7 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
         email: data.customer.email.toLowerCase(),
         phone: data.customer.phone,
         notes: data.customer.notes || null,
+        admin_notes: data.website ? "Hidden anti-bot field was filled. Verify this order by phone." : null,
         fulfillment: data.fulfillment,
         address: data.fulfillment === "delivery" ? `${a.street}, ${a.city}, ${a.state} ${a.zip}` : null,
         matched_address: t.geo?.matched ?? null,

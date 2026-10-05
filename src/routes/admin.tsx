@@ -787,7 +787,7 @@ function Settings() {
         <h2 className="pc-account__h">Payments</h2>
         <Toggle checked={s.payments.paypalEnabled} hint="Needs the PayPal Client ID and Secret below." label="Online payments with PayPal" onChange={(b) => up("payments", { paypalEnabled: b })} />
         <Toggle checked={s.payments.venmoEnabled} hint="US buyers; shows on supported devices." label="Venmo button" onChange={(b) => up("payments", { venmoEnabled: b })} />
-        <Toggle checked={s.payments.cardEnabled} hint="Guest debit/credit card through PayPal." label="Debit or credit card button" onChange={(b) => up("payments", { cardEnabled: b })} />
+        <Toggle checked={s.payments.cardEnabled} hint="Card form on the checkout page (Visa, Mastercard, Amex, Discover). Needs Advanced Credit and Debit Card Payments on your PayPal Business account; otherwise a guest card button is shown." label="Card payments" onChange={(b) => up("payments", { cardEnabled: b })} />
         <Toggle checked={s.payments.payLaterEnabled} hint="Order is saved and you collect payment by phone or at pickup." label="Pay at pickup / by phone" onChange={(b) => up("payments", { payLaterEnabled: b })} />
         <div className="pc-field">
           <label>Mode</label>

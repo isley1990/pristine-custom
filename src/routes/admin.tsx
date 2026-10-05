@@ -19,6 +19,7 @@ import {
   adminSaveSettings,
   adminTestDelivery,
   adminTestPaypal,
+  adminTestStripe,
   adminUpdateOrder,
   type AdminOrder,
   type AdminProduct,
@@ -552,7 +553,7 @@ const STATUS_OPTIONS: [string, string][] = [
   ["refunded", "Refunded"],
 ];
 const statusLabel = (s: string) => STATUS_OPTIONS.find(([k]) => k === s)?.[1] ?? s;
-const METHOD_LABEL: Record<string, string> = { paypal: "PayPal", venmo: "Venmo", card: "Card (PayPal)", pay_later: "Pay at pickup / phone" };
+const METHOD_LABEL: Record<string, string> = { paypal: "PayPal", venmo: "Venmo", card: "Card (Stripe)", pay_later: "Pay at pickup / phone" };
 
 function Orders({ onChange }: { onChange: () => void }) {
   const [status, setStatus] = useState("open");
@@ -664,7 +665,7 @@ function OrderCard({ o, open, onToggle, onSave }: { o: AdminOrder; open: boolean
             </label>
             <button className="pc-admin__new" onClick={() => onSave(o, st, notes)} type="button">Save</button>
           </div>
-          {o.status === "refunded" || o.status === "cancelled" ? <p className="pc-admin__msg">Refunds are issued in your PayPal account; then mark the order Refunded here.</p> : null}
+          {o.status === "refunded" || o.status === "cancelled" ? <p className="pc-admin__msg">Card refunds are issued in your Stripe dashboard (Payments → the charge → Refund); then mark the order Refunded here.</p> : null}
         </div>
       ) : null}
     </article>
@@ -695,7 +696,10 @@ function Settings() {
   const [s, setSRaw] = useState<StoreSettings | null>(null);
   const [dirty, setDirty] = useState(false);
   const setS = (v: StoreSettings) => { setSRaw(v); setDirty(true); };
-  const [meta, setMeta] = useState<{ secretSet: boolean; secretFromEnv: boolean; clientIdFromEnv: boolean; credsLookValid: boolean } | null>(null);
+  const [meta, setMeta] = useState<Awaited<ReturnType<typeof adminGetSettings>> | null>(null);
+  const [sk, setSk] = useState("");
+  const [wh, setWh] = useState("");
+  const [stMsg, setStMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [ppMsg, setPpMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [secret, setSecret] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
@@ -715,12 +719,15 @@ function Settings() {
     setBusy(true);
     setMsg(null);
     try {
-      const r = await adminSaveSettings({ data: { settings: s, newSecret: secret || undefined } });
+      const r = await adminSaveSettings({ data: { settings: s, newSecret: secret || undefined, newStripeSecret: sk || undefined, newStripeWebhook: wh || undefined } });
       if (!r.ok) setMsg(r.error);
       else {
         setMsg("Settings saved. Checkout uses them right away.");
         setPpMsg(null);
         setSecret("");
+        setSk("");
+        setWh("");
+        setStMsg(null);
         await load();
       }
     } catch (e) {
@@ -751,6 +758,30 @@ function Settings() {
   };
   const looksLikeId = /^A[A-Za-z0-9_-]{40,}$/.test(s.payments.clientId);
   const onlineLive = s.payments.paypalEnabled && meta.credsLookValid;
+  const testStripe = async () => {
+    setStMsg({ ok: true, text: "Checking with Stripe…" });
+    try {
+      const r = await adminTestStripe({ data: { publishableKey: s.payments.stripePublishableKey, secret: sk || undefined } });
+      setStMsg(r.ok ? { ok: true, text: r.message } : { ok: false, text: r.error });
+    } catch {
+      setStMsg({ ok: false, text: "Could not reach Stripe. Try again." });
+    }
+  };
+  const clearStripe = async () => {
+    setBusy(true);
+    try {
+      await adminSaveSettings({ data: { settings: { ...s, payments: { ...s.payments, stripePublishableKey: "", stripeEnabled: false } }, clearStripe: true } });
+      setMsg("Stripe keys removed.");
+      await load();
+    } finally {
+      setBusy(false);
+    }
+  };
+  const st = meta.stripe;
+  const pkOk = /^pk_(test|live)_[A-Za-z0-9]{20,}$/.test(s.payments.stripePublishableKey);
+  const cardOn = s.payments.stripeEnabled && st.keysOk;
+  const pkMode = /_live_/.test(s.payments.stripePublishableKey) ? "Live, real charges" : "Test mode, no real charges";
+  const webhookUrl = typeof window !== "undefined" ? `${window.location.origin}/api/stripe/webhook` : "/api/stripe/webhook";
   const statusText = onlineLive
     ? `ON (${s.payments.mode === "live" ? "Live, real payments" : "Sandbox, test payments only"})`
     : !s.payments.paypalEnabled
@@ -817,6 +848,33 @@ function Settings() {
 
       <section className="pc-form pc-glass">
         <h2 className="pc-account__h">Payment</h2>
+        <p className={cardOn ? "pc-settings__status is-on" : "pc-settings__status"}>
+          Card payments (Stripe): <strong>{dirty ? "unsaved changes" : cardOn ? `ON (${pkMode})` : !s.payments.stripeEnabled ? "OFF: turn on Card payments and save." : "OFF: add valid Stripe keys, test and save."}</strong>
+        </p>
+        <Toggle checked={s.payments.stripeEnabled} hint="Card form on the checkout page: Visa, Mastercard, American Express, Discover. Money goes to your Stripe account." label="Card payments with Stripe" onChange={(b) => up("payments", { stripeEnabled: b })} />
+        <div className="pc-field">
+          <label>Stripe Publishable key{st.env.publishable ? " (set in Vercel)" : ""}</label>
+          <input autoComplete="off" disabled={st.env.publishable} onChange={(e) => up("payments", { stripePublishableKey: e.target.value.trim() })} placeholder="pk_test_… or pk_live_…" spellCheck={false} value={s.payments.stripePublishableKey} />
+          {s.payments.stripePublishableKey && !pkOk ? <p className="pc-error">This is not a Stripe Publishable key (it starts with pk_test_ or pk_live_).</p> : null}
+        </div>
+        <div className="pc-field">
+          <label>Stripe Secret key {st.env.secret ? "(set in Vercel)" : st.secretSet ? `(saved, hidden${st.secretMode ? `, ${st.secretMode}` : ""})` : "(not set)"}</label>
+          <input autoComplete="new-password" disabled={st.env.secret} onChange={(e) => { setSk(e.target.value.trim()); setDirty(true); }} placeholder={st.secretSet ? "Leave empty to keep the saved key" : "sk_test_… or sk_live_…"} spellCheck={false} type="password" value={sk} />
+          {sk && !/^(sk|rk)_(test|live)_[A-Za-z0-9]{20,}$/.test(sk) ? <p className="pc-error">This is not a Stripe Secret key. Never type your Stripe password here.</p> : null}
+        </div>
+        <div className="pc-field">
+          <label>Webhook signing secret (recommended) {st.env.webhook ? "(set in Vercel)" : st.webhookSet ? "(saved, hidden)" : "(not set)"}</label>
+          <input autoComplete="new-password" disabled={st.env.webhook} onChange={(e) => { setWh(e.target.value.trim()); setDirty(true); }} placeholder="whsec_…" spellCheck={false} type="password" value={wh} />
+        </div>
+        <p className="pc-admin__msg">
+          Keys: <a href="https://dashboard.stripe.com/apikeys" rel="noopener" target="_blank">dashboard.stripe.com → Developers → API keys</a>. Use the test keys first, then the live keys.
+          <br />Webhook: in Stripe → Developers → Webhooks, add endpoint <code>{webhookUrl}</code> with the event <code>payment_intent.succeeded</code>, then paste its signing secret above.
+        </p>
+        <div className="pc-settings__ppbtns">
+          <button className="pc-admin__edit" disabled={!s.payments.stripePublishableKey} onClick={testStripe} type="button">Test Stripe connection</button>
+          {st.secretSet || s.payments.stripePublishableKey ? <button className="pc-admin__delete" disabled={busy} onClick={clearStripe} type="button">Remove Stripe keys</button> : null}
+        </div>
+        {stMsg ? <p className={stMsg.ok ? "pc-admin__msg" : "pc-error"} role="status">{stMsg.text}</p> : null}
         <Toggle checked={s.payments.payLaterEnabled} hint="Order is saved and you collect payment by phone or at pickup." label="Pay at pickup / by phone" onChange={(b) => up("payments", { payLaterEnabled: b })} />
         {ONLINE_PAYMENTS ? (
           <>
@@ -849,7 +907,7 @@ function Settings() {
         {ppMsg ? <p className={ppMsg.ok ? "pc-admin__msg" : "pc-error"} role="status">{ppMsg.text}</p> : null}
           </>
         ) : (
-          <p className="pc-admin__msg">Online payments (PayPal, Venmo, card) are turned off for now. Customers place the order at checkout and you collect payment by phone or at pickup.</p>
+          <p className="pc-admin__msg">PayPal and Venmo are turned off for now.</p>
         )}
       </section>
 

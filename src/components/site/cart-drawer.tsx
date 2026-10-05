@@ -73,7 +73,7 @@ export function CartDrawer() {
               <p className="pc-drawer__sub"><span>Subtotal</span><strong>{formatPrice(subtotal)}</strong></p>
               <p className="pc-drawer__note">
                 {unpriced > 0 ? `${unpriced} item${unpriced === 1 ? "" : "s"} without a listed price — request a quote for ${unpriced === 1 ? "it" : "them"}. ` : ""}
-                Before delivery and tax. Check out in a minute and pay at pickup or by phone.
+                Before delivery and tax. Pay by card at checkout, or at pickup.
               </p>
               <CheckoutActions canPay={items.length > unpriced} onGo={() => setOpen(false)} />
             </div>

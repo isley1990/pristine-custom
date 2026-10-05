@@ -1103,3 +1103,6 @@ a.pc-drawer__name:hover { text-decoration: underline; }
 .pc-settings__save { position: sticky; bottom: 0.75rem; z-index: 5; padding: 0.7rem 1rem; border-radius: 14px; }
 .pc-settings__save.is-dirty { border: 1px solid var(--pc-red-hot); background: rgba(30, 33, 39, 0.92); -webkit-backdrop-filter: var(--pc-blur); backdrop-filter: var(--pc-blur); box-shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.8); }
 .pc-admin__msg a { color: var(--pc-ink); }
+.pc-co__paytitle { margin: 0.2rem 0 0.6rem; color: var(--pc-ink-2); font-family: var(--pc-font-mono); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.pc-co__stripe { min-height: 120px; }
+.pc-co__paycard { margin-top: 0.9rem; }

@@ -21,7 +21,7 @@ export const FAQS = [
   },
   {
     q: "How can I pay?",
-    a: "Place your order online at checkout. We call to confirm fitment and arrange payment, or you pay when you pick up at our Vero Beach shop. Questions? Call or text (954) 797-1123.",
+    a: "Pay by debit or credit card at checkout (Visa, Mastercard, American Express, Discover), processed securely by Stripe. You can also place the order and pay at pickup or by phone. Questions? Call or text (954) 797-1123.",
   },
   {
     q: "Do you sell complete trailer axles and mounted tire and wheel assemblies?",

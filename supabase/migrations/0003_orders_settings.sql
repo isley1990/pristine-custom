@@ -39,3 +39,6 @@ alter table public.pristine_orders enable row level security;
 revoke all on public.pristine_orders from anon, authenticated;
 create index if not exists pristine_orders_created_idx on public.pristine_orders (created_at desc);
 create index if not exists pristine_orders_email_idx on public.pristine_orders (lower(email));
+
+-- Stripe card payments
+alter table public.pristine_orders add column if not exists stripe_payment_intent text unique;

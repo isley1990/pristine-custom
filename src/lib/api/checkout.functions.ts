@@ -5,6 +5,8 @@ import { geocodeUS } from "../geocode.server";
 import { paypalCapture, paypalConfig, paypalCreateOrder, type PPItem } from "../paypal.server";
 import { deliveryFee, ONLINE_PAYMENTS, orderNumber, roundMoney, straightMiles, type DeliveryQuote } from "../store-config";
 import { loadSettings } from "../store-settings.server";
+import { applyPaymentIntent } from "../orders.server";
+import { createPaymentIntent, retrievePaymentIntent, stripeConfig } from "../stripe.server";
 import { db } from "../supabase.server";
 
 /* ---------- public config ---------- */
@@ -13,6 +15,7 @@ export const getCheckoutConfig = createServerFn({ method: "GET" }).handler(async
   const s = await loadSettings();
   const pp = await paypalConfig();
   const online = ONLINE_PAYMENTS && s.payments.paypalEnabled && pp.ready;
+  const st = await stripeConfig();
   return {
     store: { address: s.store.address, pickupHours: s.store.pickupHours },
     pickupEnabled: s.delivery.pickupEnabled,
@@ -30,8 +33,9 @@ export const getCheckoutConfig = createServerFn({ method: "GET" }).handler(async
       online,
       paypal: online,
       venmo: online && s.payments.venmoEnabled,
-      card: online && s.payments.cardEnabled,
-      payLater: s.payments.payLaterEnabled || !online, // always keep one way to order
+      card: st.ready,
+      stripeKey: st.ready ? st.publishableKey : "",
+      payLater: s.payments.payLaterEnabled || !(online || st.ready), // always keep one way to order
       clientId: online ? s.payments.clientId : "",
       mode: s.payments.mode,
     },
@@ -149,8 +153,10 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
     const t = await computeTotals(data);
     if (t.blocked) throw new Error(t.blocked);
     const s = t.settings;
-    if (data.method === "pay_later" && !s.payments.payLaterEnabled && ONLINE_PAYMENTS && s.payments.paypalEnabled) throw new Error("That payment option is not available.");
-    if (data.method !== "pay_later") {
+    const st = await stripeConfig();
+    if (data.method === "pay_later" && !s.payments.payLaterEnabled && (st.ready || (ONLINE_PAYMENTS && s.payments.paypalEnabled))) throw new Error("That payment option is not available.");
+    if (data.method === "card" && !st.ready) throw new Error("Card payments are not available right now.");
+    if (data.method === "paypal" || data.method === "venmo") {
       if (!ONLINE_PAYMENTS) throw new Error("Online payment is not available right now.");
       const pp = await paypalConfig();
       if (!s.payments.paypalEnabled || !pp.ready) throw new Error("Online payment is not available right now.");
@@ -183,6 +189,24 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
     if (error || !row) throw new Error("Could not save the order. Try again or call us.");
     const id = row.id as number;
     if (data.method === "pay_later") return { kind: "saved" as const, orderNo: orderNumber(id), total: t.total };
+
+    if (data.method === "card") {
+      try {
+        const pi = await createPaymentIntent({
+          amountCents: Math.round(t.total * 100),
+          orderId: id,
+          orderNo: orderNumber(id),
+          email: data.customer.email,
+          name: data.customer.name,
+          phone: data.customer.phone,
+        });
+        await db().from("pristine_orders").update({ stripe_payment_intent: pi.id, updated_at: new Date().toISOString() }).eq("id", id);
+        return { kind: "stripe" as const, clientSecret: pi.client_secret, orderNo: orderNumber(id), total: t.total };
+      } catch (e) {
+        await db().from("pristine_orders").update({ status: "cancelled", admin_notes: `Stripe create failed: ${(e as Error).message}`.slice(0, 500) }).eq("id", id);
+        throw new Error("Could not start the card payment. Try again or call us.");
+      }
+    }
 
     const items: PPItem[] = t.lines.map((l) => ({
       name: l.name.slice(0, 127),
@@ -225,6 +249,18 @@ export const captureCheckoutOrder = createServerFn({ method: "POST" })
       .eq("id", order.id);
     if (!paidOk) throw new Error("The payment did not complete. You were not charged twice; call us if you need help.");
     return { ok: true as const, orderNo: orderNumber(order.id as number) };
+  });
+
+/* ---------- Stripe: confirm card payment ---------- */
+
+export const finalizeCardPayment = createServerFn({ method: "POST" })
+  .validator(z.object({ paymentIntentId: z.string().trim().regex(/^pi_[A-Za-z0-9]+$/).max(80) }))
+  .handler(async ({ data }) => {
+    const pi = await retrievePaymentIntent(data.paymentIntentId);
+    const r = await applyPaymentIntent(pi);
+    if (!r.found) throw new Error("Order not found for this payment. Call us and we will sort it out.");
+    if (!r.paid) throw new Error(r.message);
+    return { ok: true as const, orderNo: r.orderNo, total: pi.amount_received / 100 };
   });
 
 /* ---------- order lookup (My Account) ---------- */

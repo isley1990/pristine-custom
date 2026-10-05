@@ -3,14 +3,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useCart } from "@/components/site/cart-context";
 import { PageShell } from "@/components/site/page-shell";
-import { captureCheckoutOrder, createCheckoutOrder, getCheckoutConfig, quoteCheckout } from "@/lib/api/checkout.functions";
+import { loadStripe, type Stripe, type StripeElements, type StripePaymentElement } from "@stripe/stripe-js";
+
+import { captureCheckoutOrder, createCheckoutOrder, finalizeCardPayment, getCheckoutConfig, quoteCheckout } from "@/lib/api/checkout.functions";
 import { formatPrice } from "@/lib/categories";
 import { friendlyError } from "@/lib/errors";
 import { pageHead, SITE } from "@/lib/site";
 
 export const Route = createFileRoute("/checkout")({
   loader: () => getCheckoutConfig(),
-  head: () => pageHead({ title: "Checkout", description: "Order trailer parts online. Delivery priced by distance from Vero Beach, FL, or free store pickup. Pay at pickup or by phone.", path: "/checkout", noindex: true }),
+  head: () => pageHead({ title: "Checkout", description: "Order trailer parts online and pay by card. Delivery priced by distance from Vero Beach, FL, or free store pickup.", path: "/checkout", noindex: true }),
   component: Checkout,
 });
 
@@ -21,19 +23,9 @@ type Done = { orderNo: string; total: number; method: Method };
 /* ---------- PayPal JS SDK (loaded once, only when online payments are on) ---------- */
 
 type PayPalButtons = { isEligible: () => boolean; render: (el: HTMLElement) => Promise<void>; close?: () => void };
-type CardField = { render: (el: HTMLElement) => Promise<void>; close?: () => void };
-type CardFields = {
-  isEligible: () => boolean;
-  NameField: (o?: Record<string, unknown>) => CardField;
-  NumberField: (o?: Record<string, unknown>) => CardField;
-  ExpiryField: (o?: Record<string, unknown>) => CardField;
-  CVVField: (o?: Record<string, unknown>) => CardField;
-  submit: (o?: Record<string, unknown>) => Promise<void>;
-};
 type PayPalNS = {
   FUNDING: Record<"PAYPAL" | "VENMO" | "CARD", string>;
   Buttons: (opts: Record<string, unknown>) => PayPalButtons;
-  CardFields?: (opts: Record<string, unknown>) => CardFields;
 };
 declare global {
   interface Window {
@@ -51,8 +43,8 @@ function loadPayPal(clientId: string, buyerCountry: boolean): Promise<PayPalNS> 
       "client-id": clientId,
       currency: "USD",
       intent: "capture",
-      components: "buttons,card-fields,funding-eligibility",
-      "enable-funding": "venmo,card",
+      components: "buttons,funding-eligibility",
+      "enable-funding": "venmo",
     });
     if (buyerCountry) params.set("buyer-country", "US");
     s.src = `https://www.paypal.com/sdk/js?${params}`;
@@ -66,14 +58,6 @@ function loadPayPal(clientId: string, buyerCountry: boolean): Promise<PayPalNS> 
   });
   return sdkPromise;
 }
-
-/* Card input styling inside PayPal's secure iframes (matches the site's dark inputs). */
-const CARD_STYLE = {
-  input: { "font-size": "16px", "font-family": "Barlow, system-ui, sans-serif", color: "#eef0f3", padding: "12px 14px", background: "#2b3038", border: "1px solid rgba(255,255,255,0.18)", "border-radius": "12px" },
-  "input:focus": { border: "1px solid #ef3340", "box-shadow": "0 0 0 3px rgba(239,51,64,0.25)" },
-  ".invalid": { color: "#ff7a82", border: "1px solid #ff7a82" },
-  "::placeholder": { color: "#8d949f" },
-};
 
 const STATES = ["FL", "GA", "AL", "SC", "NC", "TN", "MS", "LA", "TX", "VA"];
 
@@ -141,11 +125,8 @@ function Checkout() {
 
   /* ---------- PayPal / Venmo buttons + direct card form ---------- */
   const ppRefs = { paypal: useRef<HTMLDivElement>(null), venmo: useRef<HTMLDivElement>(null), card: useRef<HTMLDivElement>(null) };
-  const cardRefs = { name: useRef<HTMLDivElement>(null), number: useRef<HTMLDivElement>(null), expiry: useRef<HTMLDivElement>(null), cvv: useRef<HTMLDivElement>(null) };
-  const cardFieldsRef = useRef<CardFields | null>(null);
   const [ppState, setPpState] = useState<"off" | "loading" | "ready" | "error">(cfg.payments.online ? "loading" : "off");
   const [venmoEligible, setVenmoEligible] = useState(false);
-  const [cardMode, setCardMode] = useState<"fields" | "button" | "none">("none");
   const blocked = !quote || !!quote.blocked || quoting;
 
   const capture = async (orderID: string, method: Method) => {
@@ -212,76 +193,123 @@ function Checkout() {
           }
         }
 
-        if (cfg.payments.card) {
-          // Preferred: card number typed right on our page (PayPal-hosted secure fields, PCI handled by PayPal).
-          const cf = pp.CardFields?.({
-            style: CARD_STYLE,
-            createOrder: () => createPaypalOrder("card"),
-            onApprove: (d: { orderID: string; liabilityShift?: string }) => {
-              if (d.liabilityShift === "NO" || d.liabilityShift === "UNKNOWN") {
-                setError("Your bank could not verify this card. Try another card or pay with PayPal.");
-                return;
-              }
-              return capture(d.orderID, "card");
-            },
-            onError: () => setError((prev) => prev ?? "The card could not be charged. Check the card details or try another card."),
-          });
-          if (cf && cf.isEligible() && cardRefs.number.current) {
-            cardFieldsRef.current = cf;
-            const parts: [CardField, HTMLDivElement | null][] = [
-              [cf.NameField({ placeholder: "Name on card" }), cardRefs.name.current],
-              [cf.NumberField({ placeholder: "Card number" }), cardRefs.number.current],
-              [cf.ExpiryField({ placeholder: "MM / YY" }), cardRefs.expiry.current],
-              [cf.CVVField({ placeholder: "CVV" }), cardRefs.cvv.current],
-            ];
-            for (const [f, el] of parts) {
-              if (!el) continue;
-              el.innerHTML = "";
-              rendered.push(f);
-              void f.render(el);
-            }
-            setCardMode("fields");
-          } else {
-            // Fallback: PayPal's guest "Debit or Credit Card" button (no PayPal account needed).
-            const el = ppRefs.card.current;
-            const btn = pp.Buttons({
-              fundingSource: pp.FUNDING.CARD,
-              style: { layout: "vertical", shape: "rect", height: 46 },
-              onClick: guard,
-              createOrder: () => createPaypalOrder("card"),
-              onApprove: (d: { orderID: string }) => capture(d.orderID, "card"),
-              onError: () => setError((prev) => prev ?? "The card could not be charged. Try again or use another method."),
-            });
-            if (el && btn.isEligible()) {
-              el.innerHTML = "";
-              rendered.push(btn);
-              void btn.render(el);
-              setCardMode("button");
-            }
-          }
-        }
         setPpState("ready");
       })
       .catch(() => !cancelled && setPpState("error"));
     return () => {
       cancelled = true;
-      cardFieldsRef.current = null;
       rendered.forEach((b) => b.close?.());
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cfg.payments.online, done, items.length === 0]);
 
+  /* ---------- Stripe card payments (Payment Element) ---------- */
+  const stripeMount = useRef<HTMLDivElement>(null);
+  const stripeRef = useRef<{ stripe: Stripe; elements: StripeElements } | null>(null);
+  const [stripeState, setStripeState] = useState<"off" | "loading" | "ready" | "error">(cfg.payments.card ? "loading" : "off");
+
+  useEffect(() => {
+    if (!cfg.payments.card || done || !items.length) return;
+    let cancelled = false;
+    let pe: StripePaymentElement | null = null;
+    loadStripe(cfg.payments.stripeKey)
+      .then((stripe) => {
+        if (cancelled || !stripe || !stripeMount.current) return;
+        const amount = Math.max(50, Math.round((live.current.quote?.total ?? 1) * 100));
+        const elements = stripe.elements({
+          mode: "payment",
+          amount,
+          currency: "usd",
+          allowedPaymentMethodTypes: ["card"],
+          appearance: {
+            theme: "night",
+            variables: {
+              colorPrimary: "#ef3340",
+              colorBackground: "#2b3038",
+              colorText: "#eef0f3",
+              colorTextSecondary: "#c7ccd4",
+              colorDanger: "#ff7a82",
+              borderRadius: "12px",
+              fontFamily: "Barlow, system-ui, sans-serif",
+              fontSizeBase: "16px",
+            },
+            rules: { ".Input": { border: "1px solid rgba(255,255,255,0.18)", boxShadow: "none" }, ".Label": { color: "#c7ccd4" } },
+          },
+          fonts: [{ cssSrc: "https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&display=swap" }],
+        });
+        pe = elements.create("payment", { layout: "tabs", fields: { billingDetails: { email: "never", phone: "never" } } });
+        pe.on("ready", () => !cancelled && setStripeState("ready"));
+        pe.on("loaderror", () => !cancelled && setStripeState("error"));
+        pe.mount(stripeMount.current);
+        stripeRef.current = { stripe, elements };
+      })
+      .catch(() => !cancelled && setStripeState("error"));
+    return () => {
+      cancelled = true;
+      pe?.destroy();
+      stripeRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cfg.payments.card, done, items.length === 0]);
+
+  // Keep the card form's amount in sync with the total (delivery / tax changes).
+  useEffect(() => {
+    const total = quote?.total;
+    if (stripeRef.current && total && total > 0) stripeRef.current.elements.update({ amount: Math.max(50, Math.round(total * 100)) });
+  }, [quote?.total, stripeState]);
+
+  // Returning from a bank verification page (rare for US cards): finish the order.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    const pi = q.get("payment_intent");
+    if (!pi) return;
+    window.history.replaceState(null, "", "/checkout");
+    setBusy(true);
+    finalizeCardPayment({ data: { paymentIntentId: pi } })
+      .then((r) => {
+        setDone({ orderNo: r.orderNo, total: r.total, method: "card" });
+        clear();
+      })
+      .catch((e) => setError(friendlyError(e, "We could not confirm the card payment. Call us and we will check it.")))
+      .finally(() => setBusy(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const payCard = async () => {
     const msg = contactError() ?? quote?.blocked ?? null;
     if (msg) return setError(msg);
-    const cf = cardFieldsRef.current;
-    if (!cf) return;
+    const s = stripeRef.current;
+    if (!s) return setError("The card form is still loading. Try again in a moment.");
     setError(null);
     setBusy(true);
     try {
-      await cf.submit();
-    } catch {
-      setError((prev) => prev ?? "Check the card number, expiry and CVV, then try again.");
+      const { error: formError } = await s.elements.submit();
+      if (formError) {
+        setError(formError.message ?? "Check the card details.");
+        return;
+      }
+      const res = await placeOrder("card");
+      if (res.kind !== "stripe") throw new Error("Unexpected order type");
+      const { error: payError, paymentIntent } = await s.stripe.confirmPayment({
+        elements: s.elements,
+        clientSecret: res.clientSecret,
+        redirect: "if_required",
+        confirmParams: {
+          return_url: `${window.location.origin}/checkout`,
+          receipt_email: contact.email.trim(),
+          payment_method_data: { billing_details: { name: contact.name.trim(), email: contact.email.trim(), phone: contact.phone.trim() } },
+        },
+      });
+      if (payError) {
+        setError(payError.message ?? "The card was not charged. Check the details or try another card.");
+        return;
+      }
+      if (paymentIntent) {
+        const r = await finalizeCardPayment({ data: { paymentIntentId: paymentIntent.id } });
+        finish(r.orderNo, "card");
+      }
+    } catch (e) {
+      setError(friendlyError(e, "The card payment did not go through. You were not charged; try again or call us."));
     } finally {
       setBusy(false);
     }
@@ -340,7 +368,7 @@ function Checkout() {
   const setA = (k: keyof typeof addr) => (e: { target: { value: string } }) => setAddr((a) => ({ ...a, [k]: e.target.value }));
 
   return (
-    <PageShell accent="out" lede={cfg.payments.online ? "Pay by card, PayPal or Venmo. Delivery is priced by distance from our Vero Beach shop, or pick up for free." : "Place your order in a minute. Delivery is priced by distance from our Vero Beach shop, or pick up for free."} title="Check">
+    <PageShell accent="out" lede={cfg.payments.card ? "Pay securely by card. Delivery is priced by distance from our Vero Beach shop, or pick up for free." : cfg.payments.online ? "Pay with PayPal or Venmo. Delivery is priced by distance from our Vero Beach shop, or pick up for free." : "Place your order in a minute. Delivery is priced by distance from our Vero Beach shop, or pick up for free."} title="Check">
       <div className="pc-co">
         <div className="pc-co__main">
           <section className="pc-form pc-glass" aria-labelledby="co-contact">
@@ -428,40 +456,39 @@ function Checkout() {
             {error ? <p className="pc-error" role="alert">{error}</p> : null}
             {quote?.blocked && !error ? <p className="pc-co__hint">{quote.blocked}</p> : null}
             <div className={blocked ? "pc-co__pay is-blocked" : "pc-co__pay"} aria-busy={busy}>
+              {cfg.payments.card ? (
+                <div className="pc-co__card" data-loading={stripeState === "loading" ? "true" : undefined}>
+                  <p className="pc-co__paytitle">Pay by card</p>
+                  {stripeState === "loading" ? <p className="pc-co__hint">Loading secure card form…</p> : null}
+                  {stripeState === "error" ? <p className="pc-error">The card form could not load. Refresh the page or call us.</p> : null}
+                  <div className="pc-co__stripe" ref={stripeMount} />
+                  <button className="pc-cta-buy pc-co__btn pc-co__paycard" disabled={busy || blocked || stripeState !== "ready"} onClick={payCard} type="button">
+                    {busy ? "Processing…" : `Pay ${quote ? formatPrice(quote.total) : ""}`}
+                  </button>
+                  <p className="pc-co__brands">Visa · Mastercard · American Express · Discover</p>
+                </div>
+              ) : null}
               {cfg.payments.online ? (
                 <>
-                  {ppState === "loading" ? <p className="pc-co__hint">Loading secure payment…</p> : null}
-                  {ppState === "error" ? <p className="pc-error">Online payment could not load. Refresh the page or use another option.</p> : null}
+                  {cfg.payments.card ? <p className="pc-co__or"><span>or</span></p> : null}
+                  {ppState === "loading" ? <p className="pc-co__hint">Loading PayPal…</p> : null}
+                  {ppState === "error" ? <p className="pc-error">PayPal could not load. Refresh the page or use another option.</p> : null}
                   <div ref={ppRefs.paypal} />
                   <div ref={ppRefs.venmo} />
                   {ppState === "ready" && cfg.payments.venmo && !venmoEligible ? <p className="pc-co__hint">Venmo appears on supported phones and US accounts.</p> : null}
-                  {cfg.payments.card ? (
-                    <div className="pc-co__card" data-loading={cardMode === "none" ? "true" : undefined} hidden={cardMode === "button" || ppState === "error"}>
-                      <p className="pc-co__or"><span>or pay with a card</span></p>
-                      <div className="pc-co__cardgrid">
-                        <div className="pc-co__cf pc-co__cf--wide" ref={cardRefs.name} />
-                        <div className="pc-co__cf pc-co__cf--wide" ref={cardRefs.number} />
-                        <div className="pc-co__cf" ref={cardRefs.expiry} />
-                        <div className="pc-co__cf" ref={cardRefs.cvv} />
-                      </div>
-                      <button className="pc-cta-buy pc-co__btn pc-co__paycard" disabled={busy || blocked} onClick={payCard} type="button">
-                        {busy ? "Processing…" : `Pay ${quote ? formatPrice(quote.total) : ""} with card`}
-                      </button>
-                      <p className="pc-co__brands">Visa · Mastercard · American Express · Discover</p>
-                    </div>
-                  ) : null}
-                  <div ref={ppRefs.card} />
                 </>
-              ) : (
+              ) : null}
+              {!cfg.payments.card && !cfg.payments.online ? (
                 <p className="pc-co__hint">Place your order now. We call you to confirm fitment and arrange payment, or you pay when you pick up.</p>
-              )}
+              ) : null}
+              {cfg.payments.payLater && (cfg.payments.card || cfg.payments.online) ? <p className="pc-co__or"><span>or</span></p> : null}
               {cfg.payments.payLater ? (
-                <button className={cfg.payments.online ? "pc-cta-browse pc-co__later" : "pc-cta-buy pc-co__btn pc-co__paycard"} disabled={busy || blocked} onClick={payLater} type="button">
-                  {busy ? "Placing order…" : cfg.payments.online ? "Place order · pay at pickup or by phone" : `Place order${quote ? ` · ${formatPrice(quote.total)}` : ""}`}
+                <button className={cfg.payments.online || cfg.payments.card ? "pc-cta-browse pc-co__later" : "pc-cta-buy pc-co__btn pc-co__paycard"} disabled={busy || blocked} onClick={payLater} type="button">
+                  {busy ? "Placing order…" : cfg.payments.online || cfg.payments.card ? "Place order · pay at pickup or by phone" : `Place order${quote ? ` · ${formatPrice(quote.total)}` : ""}`}
                 </button>
               ) : null}
             </div>
-            <p className="pc-co__fine">{cfg.payments.online ? "Payments are processed by PayPal. We never see or store your card or bank details. " : ""}We confirm fitment before your order ships; see our <a href="/shipping-returns">shipping and return policy</a>.</p>
+            <p className="pc-co__fine">{cfg.payments.card ? "Card payments are processed securely by Stripe. We never see or store your card number. " : ""}{cfg.payments.online ? "PayPal payments are processed by PayPal. " : ""}We confirm fitment before your order ships; see our <a href="/shipping-returns">shipping and return policy</a>.</p>
           </section>
         </div>
 

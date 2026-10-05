@@ -1,5 +1,10 @@
-/** Online payments (PayPal, Venmo, card via PayPal) are switched off for now. Flip to true to bring them back. */
+/** PayPal / Venmo are switched off for now (cards go through Stripe). Flip to true to bring PayPal back. */
 export const ONLINE_PAYMENTS = false;
+
+export const STRIPE_PK_RE = /^pk_(test|live)_[A-Za-z0-9]{20,}$/;
+export const STRIPE_SK_RE = /^(sk|rk)_(test|live)_[A-Za-z0-9]{20,}$/;
+export const STRIPE_WH_RE = /^whsec_[A-Za-z0-9]{20,}$/;
+export const stripeKeyMode = (k: string) => (/_live_/.test(k) ? "live" : /_test_/.test(k) ? "test" : null);
 
 /** Checkout, delivery and tax settings. Shared by server and admin UI (no secrets here). */
 export type DeliverySettings = {
@@ -26,6 +31,9 @@ export type PaymentSettings = {
   payLaterEnabled: boolean; // "Pay at pickup / we call you"
   mode: "sandbox" | "live";
   clientId: string;
+  /** Card payments through Stripe (Payment Element on the checkout page). */
+  stripeEnabled: boolean;
+  stripePublishableKey: string;
 };
 
 export type StoreSettings = {
@@ -58,7 +66,7 @@ export const DEFAULT_SETTINGS: StoreSettings = {
     freeWithinMiles: 25,
   },
   tax: { rate: 7, taxDelivery: false },
-  payments: { paypalEnabled: false, venmoEnabled: true, cardEnabled: true, payLaterEnabled: true, mode: "sandbox", clientId: "" },
+  payments: { paypalEnabled: false, venmoEnabled: true, cardEnabled: true, payLaterEnabled: true, mode: "sandbox", clientId: "", stripeEnabled: false, stripePublishableKey: "" },
 };
 
 const R = 3958.8; // earth radius, miles

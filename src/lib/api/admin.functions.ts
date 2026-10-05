@@ -5,7 +5,9 @@ import { categories, productImage } from "../categories";
 import { checkPassword, endSession, isAdmin, requireAdmin, startSession } from "../admin-auth.server";
 import { db } from "../supabase.server";
 import { DEFAULT_SETTINGS, deliveryFee, orderNumber, straightMiles, type StoreSettings } from "../store-config";
-import { clientIdFromEnv, loadPaypalSecret, loadSettings, saveSettings, savePaypalSecret, secretFromEnv } from "../store-settings.server";
+import { clientIdFromEnv, loadPaypalSecret, loadSettings, loadStripeSecret, loadStripeWebhookSecret, saveSettings, savePaypalSecret, saveStripeSecret, saveStripeWebhookSecret, secretFromEnv, stripeEnv } from "../store-settings.server";
+import { stripeRequest } from "../stripe.server";
+import { STRIPE_PK_RE, STRIPE_SK_RE, STRIPE_WH_RE, stripeKeyMode } from "../store-config";
 import { geocodeUS } from "../geocode.server";
 import { paypalToken } from "../paypal.server";
 
@@ -339,7 +341,22 @@ export const adminGetSettings = createServerFn({ method: "GET" }).handler(async 
   requireAdmin();
   const s = await loadSettings();
   const secret = await loadPaypalSecret();
-  return { settings: s, secretSet: !!secret, secretFromEnv: secretFromEnv(), clientIdFromEnv: clientIdFromEnv(), credsLookValid: CLIENT_ID_RE.test(s.payments.clientId) && !!secret };
+  const stripeSecret = await loadStripeSecret();
+  const stripeWh = await loadStripeWebhookSecret();
+  return {
+    settings: s,
+    secretSet: !!secret,
+    secretFromEnv: secretFromEnv(),
+    clientIdFromEnv: clientIdFromEnv(),
+    credsLookValid: CLIENT_ID_RE.test(s.payments.clientId) && !!secret,
+    stripe: {
+      secretSet: !!stripeSecret,
+      secretMode: stripeKeyMode(stripeSecret),
+      webhookSet: !!stripeWh,
+      env: stripeEnv(),
+      keysOk: STRIPE_PK_RE.test(s.payments.stripePublishableKey) && STRIPE_SK_RE.test(stripeSecret) && stripeKeyMode(stripeSecret) === stripeKeyMode(s.payments.stripePublishableKey),
+    },
+  };
 });
 
 const num = (min: number, max: number) => z.number().finite().min(min).max(max);
@@ -367,6 +384,8 @@ const settingsSchema = z.object({
     payLaterEnabled: z.boolean(),
     mode: z.enum(["sandbox", "live"]),
     clientId: z.string().trim().max(200),
+    stripeEnabled: z.boolean(),
+    stripePublishableKey: z.string().trim().max(300),
   }),
 });
 
@@ -382,12 +401,23 @@ const credError = (clientId: string, secret: string | null) => {
 };
 
 export const adminSaveSettings = createServerFn({ method: "POST" })
-  .validator(z.object({ settings: settingsSchema, newSecret: z.string().trim().max(300).optional(), clearSecret: z.boolean().optional() }))
+  .validator(
+    z.object({
+      settings: settingsSchema,
+      newSecret: z.string().trim().max(300).optional(),
+      clearSecret: z.boolean().optional(),
+      newStripeSecret: z.string().trim().max(300).optional(),
+      newStripeWebhook: z.string().trim().max(300).optional(),
+      clearStripe: z.boolean().optional(),
+    }),
+  )
   .handler(async ({ data }) => {
     requireAdmin();
     const s = data.settings as StoreSettings;
     const bad = credError(clientIdFromEnv() ? "" : s.payments.clientId, data.newSecret || null);
     if (bad) return { ok: false as const, error: bad };
+    const sbad = await stripeCredError(s.payments.stripePublishableKey, data.newStripeSecret || null, data.newStripeWebhook || null, s.payments.stripeEnabled && !data.clearStripe);
+    if (sbad) return { ok: false as const, error: sbad };
     // If the store address changed, refresh its coordinates.
     const prev = await loadSettings();
     if (s.store.address !== prev.store.address) {
@@ -399,6 +429,13 @@ export const adminSaveSettings = createServerFn({ method: "POST" })
     await saveSettings(s);
     if (data.clearSecret) await savePaypalSecret("");
     else if (data.newSecret) await savePaypalSecret(data.newSecret);
+    if (data.clearStripe) {
+      await saveStripeSecret("");
+      await saveStripeWebhookSecret("");
+    } else {
+      if (data.newStripeSecret) await saveStripeSecret(data.newStripeSecret);
+      if (data.newStripeWebhook) await saveStripeWebhookSecret(data.newStripeWebhook);
+    }
     return { ok: true as const };
   });
 
@@ -417,6 +454,32 @@ export const adminTestPaypal = createServerFn({ method: "POST" })
       return { ok: true as const, message: `Connected to PayPal (${data.mode === "live" ? "Live" : "Sandbox"}). Save settings to turn payments on.` };
     } catch {
       return { ok: false as const, error: `PayPal rejected these keys in ${data.mode === "live" ? "Live" : "Sandbox"} mode. Check that the mode matches the tab you copied the keys from.` };
+    }
+  });
+
+async function stripeCredError(pk: string, newSecret: string | null, newWebhook: string | null, enabling: boolean) {
+  if (pk && !STRIPE_PK_RE.test(pk)) return "That is not a Stripe Publishable key. Copy it from dashboard.stripe.com → Developers → API keys (starts with pk_test_ or pk_live_).";
+  if (newSecret && !STRIPE_SK_RE.test(newSecret)) return "That is not a Stripe Secret key. Copy it from dashboard.stripe.com → Developers → API keys (starts with sk_test_, sk_live_ or rk_). Never enter your Stripe password here.";
+  if (newWebhook && !STRIPE_WH_RE.test(newWebhook)) return "That is not a Stripe webhook signing secret (it starts with whsec_).";
+  const secret = newSecret || (await loadStripeSecret());
+  if (pk && secret && stripeKeyMode(pk) !== stripeKeyMode(secret)) return "The Publishable key and Secret key are from different modes (one test, one live). Use both test keys or both live keys.";
+  if (enabling && (!pk || !secret)) return "To turn on card payments, add both the Stripe Publishable key and Secret key.";
+  return null;
+}
+
+export const adminTestStripe = createServerFn({ method: "POST" })
+  .validator(z.object({ publishableKey: z.string().trim().max(300), secret: z.string().trim().max(300).optional() }))
+  .handler(async ({ data }) => {
+    requireAdmin();
+    const secret = data.secret || (await loadStripeSecret());
+    const bad = await stripeCredError(data.publishableKey, data.secret || null, null, true);
+    if (bad) return { ok: false as const, error: bad };
+    try {
+      await stripeRequest<{ data: unknown[] }>(secret, "GET", "/payment_intents", { limit: 1 });
+      const mode = stripeKeyMode(secret) === "live" ? "Live (real charges)" : "Test (no real charges)";
+      return { ok: true as const, message: `Connected to Stripe in ${mode} mode. Save settings to turn card payments on.` };
+    } catch (e) {
+      return { ok: false as const, error: `Stripe rejected the Secret key: ${(e as Error).message}` };
     }
   });
 

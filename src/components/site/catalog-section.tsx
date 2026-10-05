@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 
 import type { ProductCard } from "@/lib/api/products.functions";
-import { categories } from "@/lib/categories";
+import { categories, catThumb } from "@/lib/categories";
 
 import { Chevron, StarIcon } from "./icons";
 import { ProductGrid } from "./product-card";
@@ -12,7 +12,7 @@ export function CategoryGrid({ counts }: { counts?: Record<string, number> }) {
     <nav aria-label="Part categories" className="pc-cats">
       {categories.map((c) => (
         <Link className="pc-cat" key={c.id} params={{ category: c.id }} to="/shop/$category">
-          <img alt="" className="pc-cat__img" decoding="async" height={64} loading="lazy" src={c.image} width={64} />
+          <img alt="" className="pc-cat__img" decoding="async" height={64} loading="lazy" src={catThumb(c.image)} width={64} />
           <span className="pc-cat__text">
             <span className="pc-cat__name">{c.name}</span>
             {counts?.[c.id] ? <span className="pc-cat__count">{counts[c.id]} parts</span> : null}

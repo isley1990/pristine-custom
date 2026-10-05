@@ -6,7 +6,7 @@ import { breadcrumbJsonLd, pageHead } from "@/lib/site";
 export const Route = createFileRoute("/shipping-returns")({
   head: () =>
     pageHead({
-      title: "Shipping and Return Policy",
+      title: "Delivery, Pickup and Return Policy",
       description: "Pay by card online or at pickup. Free store pickup in Vero Beach, FL, local delivery priced by distance, and how returns and refunds work.",
       path: "/shipping-returns",
       jsonLd: [breadcrumbJsonLd([{ name: "Home", path: "/" }, { name: "Shipping and Return Policy", path: "/shipping-returns" }])],

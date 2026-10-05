@@ -98,7 +98,7 @@ function SearchBox() {
               <ul>
                 {results.map((p) => (
                   <li key={p.partNumber}>
-                    <img alt="" height={44} loading="lazy" src={p.image} width={44} />
+                    <img alt="" height={44} loading="lazy" src={p.thumb ?? p.image} width={44} />
                     <a className="pc-search__meta" href={`/product/${p.slug}`}>
                       <p className="pc-search__name">{p.name}</p>
                       <p className="pc-search__sku">
@@ -152,7 +152,7 @@ export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
     <header className="pc-header">
       <div className="pc-header__bar pc-glass">
         <a aria-label="Pristine Custom home" className="pc-header__logo" href="/">
-          <img alt="Pristine Custom Wheels and Trailer Parts" height={88} src="/assets/brand/logo_main.webp" width={240} />
+          <img alt="Pristine Custom Wheels and Trailer Parts" fetchPriority="high" height={88} src="/assets/brand/logo_main-480.webp" width={240} />
         </a>
         <div className="pc-header__main">
           <div className="pc-header__top">

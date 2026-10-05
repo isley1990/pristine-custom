@@ -9,10 +9,10 @@ import { formatPrice } from "@/lib/categories";
 import { useCart } from "./cart-context";
 
 const CATS = [
-  { id: "Wheels", icon: "/assets/icons/wheel.png" },
-  { id: "Tires", icon: "/assets/icons/measure.png" },
-  { id: "Trailer parts", icon: "/assets/icons/axle.png" },
-  { id: "Accessories", icon: "/assets/icons/install.png" },
+  { id: "Wheels", icon: "/assets/icons/sm/wheel.webp" },
+  { id: "Tires", icon: "/assets/icons/sm/measure.webp" },
+  { id: "Trailer parts", icon: "/assets/icons/sm/axle.webp" },
+  { id: "Accessories", icon: "/assets/icons/sm/install.webp" },
 ] as const;
 
 type Cat = (typeof CATS)[number]["id"];
@@ -71,7 +71,7 @@ export function QuoteSection() {
     <section id="quote" className="pc-section" aria-labelledby="quote-title">
       <div className="pc-wrap pc-quote__grid">
         <div>
-          <img alt="" className="pc-quote__badge" src="/assets/brand/logo_badge.webp" width={170} height={136} />
+          <img alt="" className="pc-quote__badge" src="/assets/brand/logo_badge-260.webp" width={170} height={136} />
           <h2 id="quote-title" className="pc-display">
             Tell us what <span className="pc-red-text">you tow.</span>
           </h2>

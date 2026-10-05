@@ -6,8 +6,8 @@ import { breadcrumbJsonLd, pageHead } from "@/lib/site";
 export const Route = createFileRoute("/about")({
   head: () =>
     pageHead({
-      title: "About Us",
-      description: "Pristine Custom sells custom trailer wheels, tires and 2,300+ trailer parts, with a fitment check on every order.",
+      title: "About Pristine Custom, Trailer Parts in Vero Beach FL",
+      description: "Pristine Custom in Vero Beach, FL sells custom trailer wheels, tires and 2,300+ trailer parts, with a fitment check on every order and local delivery.",
       path: "/about",
       image: "/assets/shop/wheel-set.webp",
       jsonLd: [breadcrumbJsonLd([{ name: "Home", path: "/" }, { name: "About Us", path: "/about" }])],
@@ -16,9 +16,9 @@ export const Route = createFileRoute("/about")({
 });
 
 const points = [
-  { icon: "/assets/icons/measure.png", title: "Fitment first", body: "We ask for your bolt pattern, axle rating and tire size so the part you get is the part that fits." },
-  { icon: "/assets/icons/wheel.png", title: "Custom done clean", body: "Chrome and machined wheels, mounted and balanced, for trailers that should look as good as they tow." },
-  { icon: "/assets/icons/install.png", title: "Parts for the whole rig", body: "Axles, brakes, springs, lights and hardware, so one order finishes the job." },
+  { icon: "/assets/icons/sm/measure.webp", title: "Fitment first", body: "We ask for your bolt pattern, axle rating and tire size so the part you get is the part that fits." },
+  { icon: "/assets/icons/sm/wheel.webp", title: "Custom done clean", body: "Chrome and machined wheels, mounted and balanced, for trailers that should look as good as they tow." },
+  { icon: "/assets/icons/sm/install.webp", title: "Parts for the whole rig", body: "Axles, brakes, springs, lights and hardware, so one order finishes the job." },
 ];
 
 function About() {

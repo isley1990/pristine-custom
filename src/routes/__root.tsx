@@ -66,12 +66,6 @@ function buildHead(meta: AppMeta) {
       ...(ogVideo ? [{ property: "og:video", content: ogVideo }] : []),
     ],
     links: [
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" as const },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Saira:ital,wght@1,700;1,800&display=swap",
-      },
       { rel: "stylesheet", href: appCss },
       { rel: "icon", href: "/favicon.ico", sizes: "any" },
       { rel: "icon", type: "image/png", sizes: "32x32", href: "/assets/brand/icon-32.png" },

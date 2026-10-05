@@ -6,7 +6,8 @@ import { Pager } from "@/components/site/pager";
 import { ProductGrid } from "@/components/site/product-card";
 import { ShopToolbar } from "@/components/site/shop-toolbar";
 import { listProducts } from "@/lib/api/products.functions";
-import { categoryById } from "@/lib/categories";
+import { categoryById, catThumb } from "@/lib/categories";
+import { fitmentTip } from "@/lib/product-specs";
 import { abs, breadcrumbJsonLd, pageHead } from "@/lib/site";
 
 type Sort = "relevance" | "name" | "price-asc" | "price-desc";
@@ -32,7 +33,7 @@ export const Route = createFileRoute("/shop/$category")({
     const path = `/shop/${cat.id}${page > 1 ? `?page=${page}` : ""}`;
     return pageHead({
       title: `${cat.name} for Trailers${page > 1 ? `, Page ${page}` : ""}`,
-      description: `${cat.blurb} ${list.total} parts in stock or ready to order. Search by part number and request a fitment-checked quote.`,
+      description: `${cat.blurb} ${list.total} parts with online checkout, local delivery or free pickup in Vero Beach, FL.`,
       path,
       image: cat.image,
       noindex: !!q,
@@ -76,10 +77,11 @@ function CategoryPage() {
           <span aria-current="page">{cat.name}</span>
         </nav>
         <header className="pc-cathero pc-glass">
-          <img alt="" className="pc-cathero__img" height={160} src={cat.image} width={160} />
+          <img alt="" className="pc-cathero__img" fetchPriority="high" height={160} src={catThumb(cat.image)} width={160} />
           <div>
             <h1 className="pc-display">{cat.name}</h1>
             <p className="pc-lede">{cat.intro}</p>
+            {fitmentTip(cat.id) ? <p className="pc-cathero__tip"><strong>Before you order:</strong> {fitmentTip(cat.id)}.</p> : null}
           </div>
         </header>
         <ShopToolbar

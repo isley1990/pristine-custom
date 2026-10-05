@@ -3,7 +3,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useCart } from "@/components/site/cart-context";
 import { PageShell } from "@/components/site/page-shell";
-import { loadStripe, type Stripe, type StripeElements, type StripePaymentElement } from "@stripe/stripe-js";
+import type { Stripe, StripeElements, StripePaymentElement } from "@stripe/stripe-js";
+import { loadStripe } from "@stripe/stripe-js/pure";
 
 import { captureCheckoutOrder, createCheckoutOrder, finalizeCardPayment, getCheckoutConfig, quoteCheckout } from "@/lib/api/checkout.functions";
 import { formatPrice } from "@/lib/categories";

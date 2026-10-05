@@ -9,7 +9,7 @@ import { submitContact } from "@/lib/api/quote.functions";
 export const Route = createFileRoute("/contact")({
   head: () =>
     pageHead({
-      title: "Contact Us",
+      title: "Contact Pristine Custom | (954) 797-1123",
       description: "Call or text Pristine Custom at (954) 797-1123, visit 1621 91st Ct, Vero Beach, FL 32966, or send a message about a trailer part, fitment or a return.",
       path: "/contact",
       jsonLd: [orgJsonLd(), breadcrumbJsonLd([{ name: "Home", path: "/" }, { name: "Contact Us", path: "/contact" }])],
@@ -61,7 +61,7 @@ function Contact() {
       <div className="pc-contact">
         <aside className="pc-contact__side">
           <div className="pc-glass pc-contact__card pc-contact__direct">
-            <img alt="" height={44} src="/assets/icons/quality.png" width={44} />
+            <img alt="" height={44} src="/assets/icons/sm/quality.webp" width={44} />
             <div>
               <h2>Talk to the parts desk</h2>
               <p><a className="pc-contact__big" href={SITE.phoneHref}>{SITE.phoneDisplay}</a></p>
@@ -71,7 +71,7 @@ function Contact() {
             </div>
           </div>
           <div className="pc-glass pc-contact__card">
-            <img alt="" height={44} src="/assets/icons/quality.png" width={44} />
+            <img alt="" height={44} src="/assets/icons/sm/quality.webp" width={44} />
             <div>
               <h2>Need parts priced?</h2>
               <p>Add parts to your cart and send a quote request. It goes straight to our parts desk.</p>
@@ -82,7 +82,7 @@ function Contact() {
             </div>
           </div>
           <div className="pc-glass pc-contact__card">
-            <img alt="" height={44} src="/assets/icons/shipping.png" width={44} />
+            <img alt="" height={44} src="/assets/icons/sm/shipping.webp" width={44} />
             <div>
               <h2>Tracking an order?</h2>
               <p>Use your email and request number in My Account to see what you sent us.</p>

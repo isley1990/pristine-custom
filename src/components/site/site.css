@@ -1106,3 +1106,6 @@ a.pc-drawer__name:hover { text-decoration: underline; }
 .pc-co__paytitle { margin: 0.2rem 0 0.6rem; color: var(--pc-ink-2); font-family: var(--pc-font-mono); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; }
 .pc-co__stripe { min-height: 120px; }
 .pc-co__paycard { margin-top: 0.9rem; }
+.pc-cathero__tip, .pc-product-page__tip { margin: 0.5rem 0 0; color: var(--pc-ink-2); font-size: 0.92rem; line-height: 1.5; }
+.pc-cathero__tip strong, .pc-product-page__tip strong { color: var(--pc-ink); }
+@media (max-width: 560px) { .pc-cathero__tip { grid-column: 1 / -1; font-size: 0.85rem; } }

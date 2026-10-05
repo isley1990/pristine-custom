@@ -49,7 +49,7 @@ export const DEFAULT_SETTINGS: StoreSettings = {
     address: "1621 91st Ct, Vero Beach, FL 32966",
     lat: 27.632454,
     lng: -80.514558,
-    pickupHours: "Mon–Fri 9am–5pm, Sat by appointment",
+    pickupHours: "Call or text (954) 797-1123 to set a pickup time",
   },
   delivery: {
     enabled: true,

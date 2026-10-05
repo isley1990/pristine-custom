@@ -9,7 +9,7 @@ export function ProductCard({ product, eager = false }: { product: Card; eager?:
   return (
     <li className="pc-pcard">
       <Link className="pc-pcard__media" params={{ slug: product.slug }} to="/product/$slug" aria-label={product.name}>
-        <img alt={product.name} decoding="async" height={240} loading={eager ? "eager" : "lazy"} src={product.image} width={240} />
+        <img alt={product.name} decoding="async" height={240} loading={eager ? "eager" : "lazy"} src={product.thumb ?? product.image} width={240} />
       </Link>
       <div className="pc-pcard__body">
         <p className="pc-pcard__meta">

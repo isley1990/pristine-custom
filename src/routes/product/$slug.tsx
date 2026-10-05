@@ -5,6 +5,7 @@ import { useCart } from "@/components/site/cart-context";
 import { ProductGrid } from "@/components/site/product-card";
 import { getProduct } from "@/lib/api/products.functions";
 import { categoryById, formatPrice } from "@/lib/categories";
+import { productDescription, productSpecs, fitmentTip } from "@/lib/product-specs";
 import { abs, breadcrumbJsonLd, pageHead, SITE } from "@/lib/site";
 
 export const Route = createFileRoute("/product/$slug")({
@@ -17,9 +18,11 @@ export const Route = createFileRoute("/product/$slug")({
     if (!loaderData) return {};
     const p = loaderData.product;
     const cat = categoryById(p.category);
-    const desc = `${p.name}. Part #${p.partNumber}${p.brand ? `, ${p.brand}` : ""}. ${
-      p.price != null ? `${formatPrice(p.price)}.` : "Call or request a quote for price."
-    } Fitment checked before it ships.`;
+    const specs = productSpecs(p.name, p.brand);
+    const about = p.description ?? productDescription(p);
+    const desc = `${p.price != null ? `${formatPrice(p.price)} · ` : ""}${p.name}. Part #${p.partNumber}${p.brand ? `, ${p.brand}` : ""}. ${
+      specs.filter((x) => x.label !== "Brand").slice(0, 2).map((x) => `${x.label}: ${x.value}`).join(". ")
+    }${specs.length > 1 ? ". " : ""}Local delivery or free pickup in Vero Beach, FL.`;
     const product: Record<string, unknown> = {
       "@context": "https://schema.org",
       "@type": "Product",
@@ -27,10 +30,13 @@ export const Route = createFileRoute("/product/$slug")({
       sku: p.partNumber,
       mpn: p.partNumber,
       image: [abs(p.image)],
-      description: p.description ?? `${p.name}. ${cat?.blurb ?? ""}`.trim(),
+      description: about,
       category: cat?.name,
       url: abs(`/product/${p.slug}`),
       ...(p.brand ? { brand: { "@type": "Brand", name: p.brand } } : {}),
+      ...(specs.length
+        ? { additionalProperty: specs.filter((x) => x.label !== "Brand").map((x) => ({ "@type": "PropertyValue", name: x.label, value: x.value })) }
+        : {}),
     };
     if (p.price != null) {
       product.offers = {
@@ -40,12 +46,20 @@ export const Route = createFileRoute("/product/$slug")({
         availability: p.inStock ? "https://schema.org/InStock" : "https://schema.org/BackOrder",
         itemCondition: "https://schema.org/NewCondition",
         url: abs(`/product/${p.slug}`),
-        seller: { "@type": "Organization", name: SITE.name },
+        seller: { "@id": `${SITE.url}/#store` },
+        hasMerchantReturnPolicy: {
+          "@type": "MerchantReturnPolicy",
+          applicableCountry: "US",
+          returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
+          merchantReturnDays: 30,
+          returnMethod: ["https://schema.org/ReturnByMail", "https://schema.org/ReturnInStore"],
+          returnFees: "https://schema.org/ReturnShippingFees",
+        },
       };
     }
     return pageHead({
       title: p.name,
-      description: desc.slice(0, 300),
+      description: desc,
       path: `/product/${p.slug}`,
       image: p.image,
       jsonLd: [
@@ -90,6 +104,9 @@ function AddWithQty() {
 function ProductPage() {
   const { product: p, related } = Route.useLoaderData();
   const cat = categoryById(p.category);
+  const specs = productSpecs(p.name, p.brand).filter((x) => x.label !== "Brand");
+  const about = p.description ?? productDescription(p);
+  const tip = fitmentTip(p.category);
   return (
     <main className="pc-subpage pc-after">
       <div className="pc-wrap">
@@ -117,15 +134,22 @@ function ProductPage() {
             <p className="pc-product-page__note">
               {p.price == null
                 ? "Add it to your cart and send a quote request. We reply with price, fitment and shipping."
-                : "Send your cart as a quote request. We confirm fitment and shipping before any charge."}
+                : "Check out online with local delivery priced by distance, or pick it up free in Vero Beach. We confirm fitment before it ships."}
             </p>
             <dl className="pc-specs">
               <div><dt>Part number</dt><dd>{p.partNumber}</dd></div>
               {p.brand ? <div><dt>Brand</dt><dd>{p.brand}</dd></div> : null}
               {cat ? <div><dt>Category</dt><dd><Link params={{ category: cat.id }} to="/shop/$category">{cat.name}</Link></dd></div> : null}
               <div><dt>Availability</dt><dd>{p.inStock ? "In stock" : "Special order"}</dd></div>
+              {specs.map((x) => (
+                <div key={x.label}><dt>{x.label}</dt><dd>{x.value}</dd></div>
+              ))}
             </dl>
-            {p.description ? <div className="pc-product-page__desc"><h2>Details</h2><p>{p.description}</p></div> : null}
+            <div className="pc-product-page__desc">
+              <h2>About this part</h2>
+              <p>{about}</p>
+              {tip && p.description ? <p className="pc-product-page__tip"><strong>Fitment tip:</strong> before you order, {tip}.</p> : null}
+            </div>
             <p className="pc-product-page__help">
               Not sure it fits? <a href="/how-to">Check our fitment guides</a> or <a href="/contact">ask us</a>.
             </p>

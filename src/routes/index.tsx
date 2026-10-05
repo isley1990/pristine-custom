@@ -18,7 +18,7 @@ export const Route = createFileRoute("/")({
   },
   head: () =>
     pageHead({
-      title: "Pristine Custom Wheels & Trailer Parts | Trailer Wheels, Tires, Axles & Parts",
+      title: "Trailer Parts, Wheels & Tires in Vero Beach, FL | Pristine Custom",
       description: SITE.description,
       path: "/",
       jsonLd: [orgJsonLd(), websiteJsonLd(), faqJsonLd()],

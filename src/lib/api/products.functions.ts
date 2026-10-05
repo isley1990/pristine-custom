@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { categories, productImage } from "../categories";
+import { categories, productImage, productThumb } from "../categories";
 import { db } from "../supabase.server";
 
 export type ProductCard = {
@@ -13,6 +13,8 @@ export type ProductCard = {
   price: number | null;
   inStock: boolean;
   image: string;
+  /** Lightweight thumbnail for grids, search and cart. */
+  thumb: string;
 };
 
 export type ProductDetail = ProductCard & { description: string | null };
@@ -42,6 +44,7 @@ const toCard = (r: Row): ProductCard => ({
   price: r.price == null ? null : Number(r.price),
   inStock: r.in_stock,
   image: productImage(r.image_path, r.category),
+  thumb: productThumb(r.image_path, r.category),
 });
 
 /** Turns free text into a Postgres websearch query, keeping part numbers intact. */

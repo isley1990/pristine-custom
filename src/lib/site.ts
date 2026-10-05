@@ -19,24 +19,40 @@ export const SITE = {
 
 export const abs = (path: string) => (path.startsWith("http") ? path : `${SITE.url}${path}`);
 
+/** Cut text at a word boundary so search snippets end cleanly. */
+export function clampText(text: string, max: number) {
+  const t = text.replace(/\s+/g, " ").trim();
+  if (t.length <= max) return t;
+  const cut = t.slice(0, max - 1);
+  return `${cut.slice(0, Math.max(cut.lastIndexOf(" "), max - 20)).replace(/[,;:.\s]+$/, "")}…`;
+}
+
+/** Brand suffix only when it fits (~60 chars); long product names keep their words instead. */
+export function seoTitle(raw: string) {
+  if (raw.includes("Pristine")) return clampText(raw, 65);
+  const withBrand = `${raw} | Pristine Custom`;
+  return withBrand.length <= 62 ? withBrand : clampText(raw, 65);
+}
+
 /** Standard head tags for a page: title, description, canonical and social cards. */
 export function pageHead(opts: { title: string; description: string; path: string; image?: string; noindex?: boolean; jsonLd?: unknown[] }) {
-  const title = opts.title.includes("Pristine") ? opts.title : `${opts.title} | Pristine Custom`;
+  const title = seoTitle(opts.title);
+  const description = clampText(opts.description, 158);
   const image = abs(opts.image ?? SITE.ogImage);
   const url = abs(opts.path);
   return {
     meta: [
       { title },
-      { name: "description", content: opts.description },
+      { name: "description", content: description },
       { property: "og:title", content: title },
-      { property: "og:description", content: opts.description },
+      { property: "og:description", content: description },
       { property: "og:url", content: url },
       { property: "og:image", content: image },
       { property: "og:type", content: "website" },
       { property: "og:site_name", content: SITE.name },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: title },
-      { name: "twitter:description", content: opts.description },
+      { name: "twitter:description", content: description },
       { name: "twitter:image", content: image },
       ...(opts.noindex ? [{ name: "robots", content: "noindex, nofollow" }] : []),
     ],

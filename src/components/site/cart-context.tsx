@@ -80,7 +80,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             ? prev.map((i) => (i.sku === p.partNumber ? { ...i, qty: Math.min(99, i.qty + qty), price: p.price } : i))
             : [
                 ...prev,
-                { sku: p.partNumber, slug: p.slug, name: p.name, price: p.price, category: p.category, image: p.image, qty: Math.min(99, qty) },
+                { sku: p.partNumber, slug: p.slug, name: p.name, price: p.price, category: p.category, image: p.thumb ?? p.image, qty: Math.min(99, qty) },
               ],
         ),
       setQty: (sku, qty) =>

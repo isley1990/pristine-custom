@@ -57,6 +57,9 @@ export const categories: Category[] = [
     intro: "Ratchet straps, safety cables, weld-on and recessed D-rings, flush mount anchors and backing plates rated for real loads." },
 ];
 
+/** Small (224px) version of a category image for tiles and headers. */
+export const catThumb = (src: string) => src.replace("/assets/catalog/", "/assets/catalog/sm/");
+
 export const categoryById = (id: string) => categories.find((c) => c.id === id);
 
 /** Public base for product photos in Supabase Storage (public bucket). */
@@ -66,6 +69,12 @@ export const PRODUCT_IMG_BASE =
 export function productImage(path: string | null | undefined, category: string): string {
   if (path) return path.startsWith("http") ? path : PRODUCT_IMG_BASE + path;
   return categoryById(category)?.image ?? "/assets/catalog/wheels.webp";
+}
+
+/** Small (360px) catalog thumbnail served from the site itself; uploads fall back to the full photo. */
+export function productThumb(path: string | null | undefined, category: string): string {
+  if (path && path.startsWith("catalog/")) return `/t/${path.slice("catalog/".length)}`;
+  return productImage(path, category);
 }
 
 export function formatPrice(n: number): string {

@@ -1,12 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { catThumb } from "@/lib/categories";
+
 import { PageShell } from "@/components/site/page-shell";
 import { abs, breadcrumbJsonLd, pageHead } from "@/lib/site";
 
 export const Route = createFileRoute("/how-to")({
   head: () =>
     pageHead({
-      title: "Trailer How To's: Bolt Patterns, Bearings, Springs and Wiring",
+      title: "Trailer How-To Guides: Bolt Patterns, Bearings, Wiring",
       description: "Step by step trailer guides: measure a bolt pattern, repack wheel bearings, replace leaf springs and wire 4-way trailer lights.",
       path: "/how-to",
       image: "/assets/shop/hub-studs.webp",
@@ -83,7 +85,7 @@ function HowTo() {
       <div className="pc-guides">
         {guides.map((g) => (
           <article className="pc-guide pc-glass" id={g.id} key={g.id}>
-            <img alt="" className="pc-guide__img" height={160} loading="lazy" src={g.image} width={160} />
+            <img alt="" className="pc-guide__img" height={160} loading="lazy" src={g.image.includes("/assets/catalog/") ? catThumb(g.image) : g.image} width={160} />
             <div>
               <h2 className="pc-guide__title">{g.title}</h2>
               <ol className="pc-guide__steps">

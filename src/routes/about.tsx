@@ -26,7 +26,7 @@ function About() {
     <PageShell accent="Us" lede="Pristine Custom sells custom wheels, tires and trailer parts to people who want their rig built right." title="About">
       <div className="pc-about">
         <figure className="pc-about__media pc-glass">
-          <img alt="Four new ST225/75R15 trailer tires mounted on black machined aluminum wheels" height={1400} loading="lazy" src="/assets/shop/wheel-set.webp" width={1050} />
+          <img alt="Four new ST225/75R15 trailer tires mounted on black machined aluminum wheels" fetchPriority="high" height={1000} src="/assets/shop/wheel-set.webp" width={750} />
         </figure>
         <div className="pc-about__copy">
           <h2 className="pc-about__h">Built by trailer people</h2>
@@ -38,9 +38,9 @@ function About() {
             Every order gets a fitment check before it ships. If something is off, we call you first instead of shipping the wrong part.
           </p>
           <div className="pc-gallery">
-            <img alt="Machined black trailer wheels stacked in the shop" height={1400} loading="lazy" src="/assets/shop/wheel-stock.webp" width={1050} />
-            <img alt="Galvanized trailer axles with hubs ready to ship" height={1400} loading="lazy" src="/assets/shop/axles-stock.webp" width={1050} />
-            <img alt="Five lug galvanized trailer hub with wheel studs" height={1400} loading="lazy" src="/assets/shop/hub-studs.webp" width={1050} />
+            <img alt="Machined black trailer wheels stacked in the shop" height={1000} loading="lazy" src="/assets/shop/wheel-stock.webp" width={750} />
+            <img alt="Galvanized trailer axles with hubs ready to ship" height={1000} loading="lazy" src="/assets/shop/axles-stock.webp" width={750} />
+            <img alt="Five lug galvanized trailer hub with wheel studs" height={1000} loading="lazy" src="/assets/shop/hub-studs.webp" width={750} />
           </div>
           <ul className="pc-about__points">
             {points.map((p) => (

@@ -33,7 +33,7 @@ export const Route = createFileRoute("/shop/$category")({
     const path = `/shop/${cat.id}${page > 1 ? `?page=${page}` : ""}`;
     return pageHead({
       title: `${cat.name} for Trailers${page > 1 ? `, Page ${page}` : ""}`,
-      description: `${cat.blurb} ${list.total} parts with online checkout, local delivery or free pickup in Vero Beach, FL.`,
+      description: `${cat.blurb} ${list.total} parts with fast quotes by phone or email, local delivery or free pickup in Vero Beach, FL.`,
       path,
       image: cat.image,
       noindex: !!q,

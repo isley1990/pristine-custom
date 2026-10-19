@@ -13,15 +13,15 @@ export const FAQS = [
   },
   {
     q: "Why do some parts say Call for price?",
-    a: "Prices on some parts change with supplier costs and freight. Call or text (954) 797-1123, or add them to your cart and send a quote request. We reply with the current price, fitment confirmation and shipping.",
+    a: "Prices on some parts change with supplier costs and freight. Call or text (954) 797-1123, or add them to your quote list and send a quote request. We reply with the current price, fitment confirmation and delivery.",
   },
   {
     q: "How much is delivery?",
-    a: "Delivery is priced by road distance from our shop in Vero Beach, FL: a base fee covers the first miles, then a per-mile rate. Enter your address at checkout to see the exact fee before you pay. Store pickup is always free.",
+    a: "Delivery is priced by road distance from our shop in Vero Beach, FL: a base fee covers the first miles, then a per-mile rate. We include the exact fee for your address in your quote. Store pickup is always free.",
   },
   {
-    q: "How can I pay?",
-    a: "Pay by debit or credit card at checkout (Visa, Mastercard, American Express, Discover), processed securely by Stripe. You can also place the order and pay at pickup or by phone. Questions? Call or text (954) 797-1123.",
+    q: "How do I order and pay?",
+    a: "We do not take payments on the website. Send a quote request, call or text (954) 797-1123, or email pristinecustomwheels@gmail.com. We confirm fitment and your final price, then arrange payment with you by phone or at pickup.",
   },
   {
     q: "Do you sell complete trailer axles and mounted tire and wheel assemblies?",

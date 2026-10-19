@@ -17,7 +17,7 @@ export const Route = createFileRoute("/contact")({
   component: Contact,
 });
 
-const TOPICS = ["Order question", "Fitment help", "Returns", "Other"] as const;
+const TOPICS = ["Quote question", "Fitment help", "Returns", "Other"] as const;
 type Topic = (typeof TOPICS)[number];
 
 function SendMessage({ busy }: { busy: boolean }) {
@@ -29,7 +29,7 @@ function SendMessage({ busy }: { busy: boolean }) {
 }
 
 function Contact() {
-  const [topic, setTopic] = useState<Topic>("Order question");
+  const [topic, setTopic] = useState<Topic>("Quote question");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -74,7 +74,7 @@ function Contact() {
             <img alt="" height={44} src="/assets/icons/sm/quality.webp" width={44} />
             <div>
               <h2>Need parts priced?</h2>
-              <p>Add parts to your cart and send a quote request. It goes straight to our parts desk.</p>
+              <p>Add parts to your quote list and send a quote request. It goes straight to our parts desk.</p>
               <a className="pc-cta-fit" href="/#quote">
                 <span className="pc-slash" aria-hidden="true" />
                 <span className="pc-cta-fit__label">Get a quote</span>
@@ -84,7 +84,7 @@ function Contact() {
           <div className="pc-glass pc-contact__card">
             <img alt="" height={44} src="/assets/icons/sm/shipping.webp" width={44} />
             <div>
-              <h2>Tracking an order?</h2>
+              <h2>Tracking a quote?</h2>
               <p>Use your email and request number in My Account to see what you sent us.</p>
               <a className="pc-cta-fit" href="/account">
                 <span className="pc-slash" aria-hidden="true" />

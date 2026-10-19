@@ -131,7 +131,7 @@ function PhoneIcon() {
 function CartButton() {
   const { count, subtotal, setOpen } = useCart();
   return (
-    <button aria-label={`Open cart, ${count} items`} className="pc-cartbtn" onClick={() => setOpen(true)} type="button">
+    <button aria-label={`Open quote list, ${count} items`} className="pc-cartbtn" onClick={() => setOpen(true)} type="button">
       <span className="pc-cartbtn__total">{formatPrice(subtotal)}</span>
       <CartIcon />
       <span className="pc-cartbtn__count">({count})</span>

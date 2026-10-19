@@ -1,7 +1,7 @@
 # Pristine Custom Wheels & Trailer Parts
 
-Website for Pristine Custom: scroll-driven showroom film, 15-category parts catalog with part # lookup and cart,
-quote requests, contact form, request tracking, and a small admin page.
+Website for Pristine Custom: scroll-driven showroom film, 15-category parts catalog with part # lookup and a quote list,
+quote requests (no online payment: the shop quotes and takes payment by phone, email or at pickup), contact form, request tracking, and a small admin page.
 
 Stack: TanStack Start (React 19, SSR) + Nitro, deployed on Vercel. Data in Supabase.
 

@@ -95,7 +95,7 @@ function AddWithQty() {
         }}
         type="button"
       >
-        Add to cart
+        Add to quote list
       </button>
     </div>
   );
@@ -133,8 +133,8 @@ function ProductPage() {
             <AddWithQty />
             <p className="pc-product-page__note">
               {p.price == null
-                ? "Add it to your cart and send a quote request. We reply with price, fitment and shipping."
-                : "Check out online with local delivery priced by distance, or pick it up free in Vero Beach. We confirm fitment before it ships."}
+                ? "Add it to your quote list and send a request, or call us. We reply with price, fitment and delivery."
+                : "List price. Add it to your quote list and send a request, or call or email us. We confirm fitment, delivery and your final price before you pay."}
             </p>
             <dl className="pc-specs">
               <div><dt>Part number</dt><dd>{p.partNumber}</dd></div>

@@ -1,26 +1,12 @@
 import { useEffect } from "react";
 
 import { formatPrice } from "@/lib/categories";
+import { SITE } from "@/lib/site";
 
 import { useCart } from "./cart-context";
 import { Close } from "./icons";
 
-function CheckoutActions({ onGo, canPay }: { onGo: () => void; canPay: boolean }) {
-  return (
-    <>
-      {canPay ? (
-        <a className="pc-cta-buy pc-drawer__pay" href="/checkout" onClick={onGo}>
-          Checkout
-        </a>
-      ) : null}
-      <a className="pc-cta-checkout" href="/#quote" onClick={onGo}>
-        <span>{canPay ? "Or request a quote" : "Get a quote"}</span>
-        <span className="pc-cta-checkout__bars" aria-hidden="true" />
-      </a>
-    </>
-  );
-}
-
+/** The quote list: customers collect parts here, then send them as a quote request, call, or email. No online payment. */
 export function CartDrawer() {
   const { items, subtotal, count, unpriced, setQty, remove, open, setOpen } = useCart();
 
@@ -35,20 +21,31 @@ export function CartDrawer() {
     };
   }, [open, setOpen]);
 
+  const emailBody = [
+    "Hi Pristine Custom, please send me a quote for:",
+    "",
+    ...items.map((i) => `${i.qty} x ${i.name} (#${i.sku})`),
+    "",
+    "Name:",
+    "Phone:",
+    "Delivery or pickup:",
+  ].join("\n");
+  const mailHref = `mailto:${SITE.email}?subject=${encodeURIComponent("Quote request")}&body=${encodeURIComponent(emailBody)}`;
+
   return (
     <div className="pc-drawer" data-open={open ? "true" : undefined} inert={!open}>
-      <button aria-label="Close cart" className="pc-drawer__scrim" onClick={() => setOpen(false)} tabIndex={-1} type="button" />
-      <aside aria-label="Cart" className="pc-drawer__panel pc-glass" role="dialog" aria-modal="true">
+      <button aria-label="Close quote list" className="pc-drawer__scrim" onClick={() => setOpen(false)} tabIndex={-1} type="button" />
+      <aside aria-label="Quote list" className="pc-drawer__panel pc-glass" role="dialog" aria-modal="true">
         <div className="pc-drawer__head">
-          <h2>Your cart <span>({count})</span></h2>
-          <button aria-label="Close cart" className="pc-drawer__close" onClick={() => setOpen(false)} type="button">
+          <h2>Quote list <span>({count})</span></h2>
+          <button aria-label="Close quote list" className="pc-drawer__close" onClick={() => setOpen(false)} type="button">
             <Close />
           </button>
         </div>
         {items.length === 0 ? (
           <div className="pc-drawer__empty">
-            <p>Your cart is empty.</p>
-            <a href="/shop" onClick={() => setOpen(false)}>Shop parts</a>
+            <p>Your quote list is empty.</p>
+            <a href="/shop" onClick={() => setOpen(false)}>Browse parts</a>
           </div>
         ) : (
           <>
@@ -70,12 +67,21 @@ export function CartDrawer() {
               ))}
             </ul>
             <div className="pc-drawer__foot">
-              <p className="pc-drawer__sub"><span>Subtotal</span><strong>{formatPrice(subtotal)}</strong></p>
+              <p className="pc-drawer__sub"><span>Estimated</span><strong>{formatPrice(subtotal)}</strong></p>
               <p className="pc-drawer__note">
-                {unpriced > 0 ? `${unpriced} item${unpriced === 1 ? "" : "s"} without a listed price — request a quote for ${unpriced === 1 ? "it" : "them"}. ` : ""}
-                Before delivery and tax. Pay by card at checkout, or at pickup.
+                {unpriced > 0 ? `${unpriced} item${unpriced === 1 ? "" : "s"} without a listed price. ` : ""}
+                List prices before delivery and tax. We confirm fitment and send your final price by phone or email. Nothing is charged online.
               </p>
-              <CheckoutActions canPay={items.length > unpriced} onGo={() => setOpen(false)} />
+              <a className="pc-cta-buy pc-drawer__pay" href="/#quote" onClick={() => setOpen(false)}>
+                Request a quote
+              </a>
+              <a className="pc-cta-checkout" href={SITE.phoneHref}>
+                <span>Call {SITE.phoneDisplay}</span>
+                <span className="pc-cta-checkout__bars" aria-hidden="true" />
+              </a>
+              <p className="pc-drawer__note" style={{ textAlign: "center" }}>
+                Or <a href={mailHref}>email this list</a> to {SITE.email}
+              </p>
             </div>
           </>
         )}

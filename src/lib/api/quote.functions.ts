@@ -75,7 +75,7 @@ const contactInput = z.object({
   name: z.string().trim().min(2).max(120),
   email: z.string().trim().max(160).optional().default(""),
   phone: z.string().trim().max(40).optional().default(""),
-  topic: z.enum(["Order question", "Fitment help", "Returns", "Other"]),
+  topic: z.enum(["Quote question", "Fitment help", "Returns", "Other"]),
   message: z.string().trim().min(5).max(4000),
   website: z.string().max(200).optional().default(""),
 });

@@ -44,7 +44,7 @@ export function FitmentLink() {
   );
 }
 
-/** AddToCart: flips to a confirmation state for a moment after each add. */
+/** AddToCart (adds to the quote list): flips to a confirmation state for a moment after each add. */
 export function AddToCart({ product, compact = false }: { product: ProductCard; compact?: boolean }) {
   const { add } = useCart();
   const [done, setDone] = useState(false);
@@ -55,7 +55,7 @@ export function AddToCart({ product, compact = false }: { product: ProductCard; 
   }, [done]);
   return (
     <button
-      aria-label={`Add to cart: ${product.name}`}
+      aria-label={`Add to quote list: ${product.name}`}
       className={compact ? "pc-add-cart pc-add-cart--compact" : "pc-add-cart"}
       data-done={done ? "true" : undefined}
       onClick={() => {
@@ -65,7 +65,7 @@ export function AddToCart({ product, compact = false }: { product: ProductCard; 
       type="button"
     >
       {done ? <Check /> : <Plus />}
-      {compact ? null : <span>{done ? "Added" : "Add to cart"}</span>}
+      {compact ? null : <span>{done ? "Added" : "Add to quote"}</span>}
     </button>
   );
 }

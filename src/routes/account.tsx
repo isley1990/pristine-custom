@@ -4,19 +4,16 @@ import { useState, type FormEvent } from "react";
 import { useCart } from "@/components/site/cart-context";
 import { PageShell } from "@/components/site/page-shell";
 import { adminLogin, adminLogout, adminSession } from "@/lib/api/admin.functions";
-import { trackOrder } from "@/lib/api/checkout.functions";
-import { parseOrderNumber } from "@/lib/store-config";
 import { trackRequest } from "@/lib/api/quote.functions";
 import { formatPrice } from "@/lib/categories";
 import { pageHead } from "@/lib/site";
 
 export const Route = createFileRoute("/account")({
   loader: () => adminSession(),
-  head: () => pageHead({ title: "My Account", description: "Sign in, track a quote request and review your cart.", path: "/account", noindex: true }),
+  head: () => pageHead({ title: "My Account", description: "Sign in, track a quote request and review your quote list.", path: "/account", noindex: true }),
   component: Account,
 });
 
-type FoundOrder = Extract<Awaited<ReturnType<typeof trackOrder>>, { found: true }>["order"];
 type Found = { id: number; created_at: string; name: string; category: string; items: string; details: string | null };
 
 function parseItems(raw: string): string[] {
@@ -92,31 +89,14 @@ function Account() {
   const [num, setNum] = useState("");
   const [busy, setBusy] = useState(false);
   const [found, setFound] = useState<Found | null>(null);
-  const [order, setOrder] = useState<FoundOrder | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setMsg(null);
     setFound(null);
-    setOrder(null);
-    const orderId = parseOrderNumber(num);
-    if (orderId !== null) {
-      if (!email.trim() || orderId <= 0) return setMsg("Enter the email you used and your order number, like PC-1001.");
-      setBusy(true);
-      try {
-        const res = await trackOrder({ data: { email: email.trim(), id: orderId } });
-        if (res.found) setOrder(res.order);
-        else setMsg("We could not find an order with that email and number.");
-      } catch {
-        setMsg("Check the email format and try again.");
-      } finally {
-        setBusy(false);
-      }
-      return;
-    }
     const id = Number.parseInt(num.replace(/[^0-9]/g, ""), 10);
-    if (!email.trim() || !Number.isFinite(id) || id <= 0) return setMsg("Enter the email you used and your order or request number.");
+    if (!email.trim() || !Number.isFinite(id) || id <= 0) return setMsg("Enter the email you used and your quote request number.");
     setBusy(true);
     try {
       const res = await trackRequest({ data: { email: email.trim(), id } });
@@ -130,36 +110,21 @@ function Account() {
   };
 
   return (
-    <PageShell accent="Account" lede="Sign in, check a quote request you sent us, or pick up where you left off with your cart." title="My">
+    <PageShell accent="Account" lede="Sign in, check a quote request you sent us, or pick up where you left off with your quote list." title="My">
       <div className="pc-account">
         <SignIn />
         <form className="pc-form pc-glass" noValidate onSubmit={onSubmit}>
-          <h2 className="pc-account__h">Track an order</h2>
+          <h2 className="pc-account__h">Track a quote request</h2>
           <div className="pc-field">
             <label htmlFor="a-email">Email</label>
             <input autoComplete="email" id="a-email" onChange={(e) => setEmail(e.target.value)} placeholder="you@email.com" type="email" value={email} />
           </div>
           <div className="pc-field">
-            <label htmlFor="a-num">Order or request number</label>
-            <input id="a-num" inputMode="numeric" onChange={(e) => setNum(e.target.value)} placeholder="Like PC-1001, or a quote number" value={num} />
+            <label htmlFor="a-num">Request number</label>
+            <input id="a-num" inputMode="numeric" onChange={(e) => setNum(e.target.value)} placeholder="The number shown after you sent it" value={num} />
           </div>
           {msg ? <p className="pc-error" role="alert">{msg}</p> : null}
           <LookupButton busy={busy} />
-          {order ? (
-            <div className="pc-account__result">
-              <h3>Order {order.orderNo}</h3>
-              <p className="pc-account__meta">{order.created} · {order.fulfillment === "pickup" ? "Store pickup" : "Delivery"} · Status: {order.status}</p>
-              <ul>
-                {order.items.map((i) => (
-                  <li key={i.sku}>{i.qty} x {i.name} — {formatPrice(i.lineTotal)}</li>
-                ))}
-              </ul>
-              <p>
-                Subtotal {formatPrice(order.subtotal)} · {order.fulfillment === "pickup" ? "Pickup free" : `Delivery ${formatPrice(order.fee)}`} · Tax {formatPrice(order.tax)} · <strong>Total {formatPrice(order.total)}</strong>
-              </p>
-              {order.address ? <p>Delivering to {order.address}</p> : null}
-            </div>
-          ) : null}
           {found ? (
             <div className="pc-account__result">
               <h3>Request #{found.id}</h3>
@@ -176,9 +141,9 @@ function Account() {
           ) : null}
         </form>
         <div className="pc-glass pc-account__cart">
-          <h2 className="pc-account__h">Your cart</h2>
+          <h2 className="pc-account__h">Your quote list</h2>
           {count === 0 ? (
-            <p className="pc-list__empty">Your cart is empty.</p>
+            <p className="pc-list__empty">Your quote list is empty.</p>
           ) : (
             <>
               <ul>
@@ -189,10 +154,10 @@ function Account() {
                   </li>
                 ))}
               </ul>
-              <p className="pc-list__sub">Subtotal <strong>{formatPrice(subtotal)}</strong></p>
+              <p className="pc-list__sub">Estimated <strong>{formatPrice(subtotal)}</strong></p>
               <div className="pc-account__cartbtns">
-                <a className="pc-cta-buy pc-account__go" href="/checkout">Checkout</a>
-                <button className="pc-cta-browse" onClick={() => setOpen(true)} type="button">Open cart</button>
+                <a className="pc-cta-buy pc-account__go" href="/#quote">Request a quote</a>
+                <button className="pc-cta-browse" onClick={() => setOpen(true)} type="button">Open quote list</button>
               </div>
             </>
           )}

@@ -42,7 +42,7 @@ export function CatalogSection({ counts, featured }: { counts: Record<string, nu
           </h2>
           <p className="pc-lede">
             {total > 0 ? `${total.toLocaleString("en-US")} trailer parts` : "Trailer parts"} across 15 categories. Search by part number,
-            add to cart and send it for a fitment check and final quote.
+            add parts to your quote list and send it for a fitment check and final price.
           </p>
         </header>
         <CategoryGrid counts={counts} />

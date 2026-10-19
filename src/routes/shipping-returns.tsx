@@ -7,7 +7,7 @@ export const Route = createFileRoute("/shipping-returns")({
   head: () =>
     pageHead({
       title: "Delivery, Pickup and Return Policy",
-      description: "Pay by card online or at pickup. Free store pickup in Vero Beach, FL, local delivery priced by distance, and how returns and refunds work.",
+      description: "Order by quote request, phone or email. Free store pickup in Vero Beach, FL, local delivery priced by distance, and how returns and refunds work.",
       path: "/shipping-returns",
       jsonLd: [breadcrumbJsonLd([{ name: "Home", path: "/" }, { name: "Shipping and Return Policy", path: "/shipping-returns" }])],
     }),
@@ -18,7 +18,7 @@ const sections = [
   {
     h: "Order processing",
     p: [
-      "Pay by debit or credit card at checkout, processed securely by Stripe, or place the order and pay at pickup or by phone.",
+      "Orders are placed by quote request on the website, by phone at (954) 797-1123, or by email. Nothing is charged online: we confirm your final price first and arrange payment by phone or at pickup.",
       "We check fitment and availability on every order. If something will not fit your trailer, we call you before it leaves the shop and swap or refund it.",
       "Orders are prepared within 1 to 2 business days.",
     ],
@@ -27,8 +27,8 @@ const sections = [
     h: "Delivery and pickup",
     p: [
       "Store pickup is free at 1621 91st Ct, Vero Beach, FL 32966. We call or text when your order is ready.",
-      "Local delivery is priced by road distance from our shop: a base fee covers the first miles, then a per-mile rate. Checkout shows the exact fee for your address before you pay.",
-      "Large orders close to the shop can qualify for free delivery; the threshold is shown at checkout.",
+      "Local delivery is priced by road distance from our shop: a base fee covers the first miles, then a per-mile rate. We include the exact fee for your address in your quote.",
+      "Large orders close to the shop can qualify for free delivery; we tell you in your quote.",
       "Farther than our delivery range? Call or text (954) 797-1123 for parcel or freight options.",
       "Inspect every package on delivery. Report visible freight damage on the delivery receipt and contact us within 48 hours.",
     ],
@@ -53,7 +53,7 @@ const sections = [
 
 function Policy() {
   return (
-    <PageShell accent="Return Policy" lede="How you pay, how parts get to you, and what happens if something needs to come back." title="Shipping and">
+    <PageShell accent="Return Policy" lede="How you order, how parts get to you, and what happens if something needs to come back." title="Shipping and">
       <div className="pc-policy">
         {sections.map((s) => (
           <section className="pc-policy__block pc-glass" key={s.h}>

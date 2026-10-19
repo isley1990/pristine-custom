@@ -13,7 +13,6 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as AdminRouteImport } from './routes/admin'
-import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as HealthzRouteImport } from './routes/healthz'
 import { Route as HowToRouteImport } from './routes/how-to'
@@ -24,7 +23,6 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ProductSlugRouteImport } from './routes/product/$slug'
 import { Route as ShopIndexRouteImport } from './routes/shop/index'
 import { Route as ShopCategoryRouteImport } from './routes/shop/$category'
-import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe/webhook'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -44,11 +42,6 @@ const AccountRoute = AccountRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CheckoutRoute = CheckoutRouteImport.update({
-  id: '/checkout',
-  path: '/checkout',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContactRoute = ContactRouteImport.update({
@@ -101,18 +94,12 @@ const ShopCategoryRoute = ShopCategoryRouteImport.update({
   path: '/shop/$category',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiStripeWebhookRoute = ApiStripeWebhookRouteImport.update({
-  id: '/api/stripe/webhook',
-  path: '/api/stripe/webhook',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/account': typeof AccountRoute
   '/admin': typeof AdminRoute
-  '/checkout': typeof CheckoutRoute
   '/contact': typeof ContactRoute
   '/healthz': typeof HealthzRoute
   '/how-to': typeof HowToRoute
@@ -123,14 +110,12 @@ export interface FileRoutesByFullPath {
   '/product/$slug': typeof ProductSlugRoute
   '/shop/$category': typeof ShopCategoryRoute
   '/shop/': typeof ShopIndexRoute
-  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/account': typeof AccountRoute
   '/admin': typeof AdminRoute
-  '/checkout': typeof CheckoutRoute
   '/contact': typeof ContactRoute
   '/healthz': typeof HealthzRoute
   '/how-to': typeof HowToRoute
@@ -141,7 +126,6 @@ export interface FileRoutesByTo {
   '/product/$slug': typeof ProductSlugRoute
   '/shop/$category': typeof ShopCategoryRoute
   '/shop': typeof ShopIndexRoute
-  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -149,7 +133,6 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/account': typeof AccountRoute
   '/admin': typeof AdminRoute
-  '/checkout': typeof CheckoutRoute
   '/contact': typeof ContactRoute
   '/healthz': typeof HealthzRoute
   '/how-to': typeof HowToRoute
@@ -160,7 +143,6 @@ export interface FileRoutesById {
   '/product/$slug': typeof ProductSlugRoute
   '/shop/$category': typeof ShopCategoryRoute
   '/shop/': typeof ShopIndexRoute
-  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -169,7 +151,6 @@ export interface FileRouteTypes {
     | '/about'
     | '/account'
     | '/admin'
-    | '/checkout'
     | '/contact'
     | '/healthz'
     | '/how-to'
@@ -180,14 +161,12 @@ export interface FileRouteTypes {
     | '/product/$slug'
     | '/shop/$category'
     | '/shop/'
-    | '/api/stripe/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
     | '/account'
     | '/admin'
-    | '/checkout'
     | '/contact'
     | '/healthz'
     | '/how-to'
@@ -198,14 +177,12 @@ export interface FileRouteTypes {
     | '/product/$slug'
     | '/shop/$category'
     | '/shop'
-    | '/api/stripe/webhook'
   id:
     | '__root__'
     | '/'
     | '/about'
     | '/account'
     | '/admin'
-    | '/checkout'
     | '/contact'
     | '/healthz'
     | '/how-to'
@@ -216,7 +193,6 @@ export interface FileRouteTypes {
     | '/product/$slug'
     | '/shop/$category'
     | '/shop/'
-    | '/api/stripe/webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -224,7 +200,6 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   AccountRoute: typeof AccountRoute
   AdminRoute: typeof AdminRoute
-  CheckoutRoute: typeof CheckoutRoute
   ContactRoute: typeof ContactRoute
   HealthzRoute: typeof HealthzRoute
   HowToRoute: typeof HowToRoute
@@ -235,7 +210,6 @@ export interface RootRouteChildren {
   ProductSlugRoute: typeof ProductSlugRoute
   ShopCategoryRoute: typeof ShopCategoryRoute
   ShopIndexRoute: typeof ShopIndexRoute
-  ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -266,13 +240,6 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/checkout': {
-      id: '/checkout'
-      path: '/checkout'
-      fullPath: '/checkout'
-      preLoaderRoute: typeof CheckoutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/contact': {
@@ -345,13 +312,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShopCategoryRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/stripe/webhook': {
-      id: '/api/stripe/webhook'
-      path: '/api/stripe/webhook'
-      fullPath: '/api/stripe/webhook'
-      preLoaderRoute: typeof ApiStripeWebhookRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -360,7 +320,6 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   AccountRoute: AccountRoute,
   AdminRoute: AdminRoute,
-  CheckoutRoute: CheckoutRoute,
   ContactRoute: ContactRoute,
   HealthzRoute: HealthzRoute,
   HowToRoute: HowToRoute,
@@ -371,7 +330,6 @@ const rootRouteChildren: RootRouteChildren = {
   ProductSlugRoute: ProductSlugRoute,
   ShopCategoryRoute: ShopCategoryRoute,
   ShopIndexRoute: ShopIndexRoute,
-  ApiStripeWebhookRoute: ApiStripeWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

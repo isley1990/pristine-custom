@@ -76,12 +76,12 @@ export function QuoteSection() {
             Tell us what <span className="pc-red-text">you tow.</span>
           </h2>
           <p className="pc-lede">
-            Wheels, tires or a full axle swap. Send the details and we reply with parts that fit and a price.
+            Wheels, tires or a full axle swap. Send the details, or call (954) 797-1123, and we reply by phone or email with parts that fit and a price. No payment online.
           </p>
           <div className="pc-list pc-glass">
-            <h3 className="pc-list__title">Your cart</h3>
+            <h3 className="pc-list__title">Your quote list</h3>
             {items.length === 0 ? (
-              <p className="pc-list__empty">Your cart is empty. Add parts from the catalog, or just describe what you need in the form.</p>
+              <p className="pc-list__empty">Your quote list is empty. Add parts from the catalog, or just describe what you need in the form.</p>
             ) : (
               <>
                 <ul className="pc-list__items">
@@ -94,7 +94,7 @@ export function QuoteSection() {
                     </li>
                   ))}
                 </ul>
-                <p className="pc-list__sub">Subtotal <strong>{formatPrice(subtotal)}</strong></p>
+                <p className="pc-list__sub">Estimated <strong>{formatPrice(subtotal)}</strong></p>
               </>
             )}
           </div>
@@ -149,7 +149,7 @@ export function QuoteSection() {
               <label htmlFor="q-hpx">Leave this empty</label>
               <input autoComplete="off" id="q-hpx" name="pc_hpx" onChange={(e) => setWebsite(e.target.value)} tabIndex={-1} value={website} />
             </div>
-            {items.length > 0 ? <p className="pc-hint" style={{ marginTop: "1rem" }}>{items.length} cart item{items.length === 1 ? "" : "s"} will be included.</p> : null}
+            {items.length > 0 ? <p className="pc-hint" style={{ marginTop: "1rem" }}>{items.length} part{items.length === 1 ? "" : "s"} from your quote list will be included.</p> : null}
             {error ? <p className="pc-error" role="alert">{error}</p> : null}
             <SubmitQuote busy={status === "sending"} />
           </form>

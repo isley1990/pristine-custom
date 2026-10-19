@@ -12,6 +12,10 @@ Stack: TanStack Start (React 19, SSR) + Nitro, deployed on Vercel. Data in Supab
 | `SUPABASE_URL` | Supabase project URL |
 | `SUPABASE_SECRET_KEY` | Supabase secret (service role) key. Server-only. |
 | `ADMIN_KEY` | Password for `/admin` |
+| `RESEND_API_KEY` | Email alerts for new quote requests and messages (Resend) |
+| `RESEND_FROM` | Alert sender, e.g. `Pristine Custom <avisos@domain.com>` (needs a domain verified in Resend) |
+| `NOTIFY_EMAIL` | Alert recipients, comma-separated (default: the business email) |
+| `WHATSAPP_NOTIFY` | WhatsApp alerts via CallMeBot: `+19547971123:APIKEY`, comma-separated for several phones |
 
 ## Database
 

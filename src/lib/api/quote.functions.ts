@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+import { notifyShop } from "../notify.server";
 import { db } from "../supabase.server";
 
 const QUOTES = "pristine_quote_requests";
@@ -68,7 +69,9 @@ export const submitQuote = createServerFn({ method: "POST" })
       console.error(error);
       throw new Error("We could not save your request. Please try again.");
     }
-    return { ok: true as const, id: (row?.id as number | undefined) ?? null };
+    const id = (row?.id as number | undefined) ?? null;
+    await notifyShop({ kind: "quote", id, name: data.name, phone: data.phone, email: data.email, topic: data.category, lines: data.items, details: flag + data.details });
+    return { ok: true as const, id };
   });
 
 const contactInput = z.object({
@@ -99,6 +102,7 @@ export const submitContact = createServerFn({ method: "POST" })
       console.error(error);
       throw new Error("We could not send your message. Please try again.");
     }
+    await notifyShop({ kind: "message", id: null, name: data.name, phone: data.phone, email: data.email, topic: data.topic, lines: [], details: flag + data.message });
     return { ok: true as const };
   });
 

@@ -79,6 +79,9 @@ export function CartDrawer() {
                 <span>Call {SITE.phoneDisplay}</span>
                 <span className="pc-cta-checkout__bars" aria-hidden="true" />
               </a>
+              <p className="pc-drawer__note" style={{ textAlign: "center" }} lang="es">
+                Para Español: <a href={SITE.phoneEsHref}>{SITE.phoneEsDisplay}</a>
+              </p>
               <p className="pc-drawer__note" style={{ textAlign: "center" }}>
                 Or <a href={mailHref}>email this list</a> to {SITE.email}
               </p>

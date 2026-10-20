@@ -161,6 +161,10 @@ export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
               <PhoneIcon />
               <span>{SITE.phoneDisplay}</span>
             </a>
+            <a aria-label={`Para Español, llame al ${SITE.phoneEsDisplay}`} className="pc-callbtn pc-callbtn--es" href={SITE.phoneEsHref} lang="es">
+              <b className="pc-callbtn__es" aria-hidden="true">ES</b>
+              <span>Para Español {SITE.phoneEsDisplay}</span>
+            </a>
             <CartButton />
             <button
               aria-expanded={menuOpen}

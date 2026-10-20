@@ -13,7 +13,7 @@ export const FAQS = [
   },
   {
     q: "Why do some parts say Call for price?",
-    a: "Prices on some parts change with supplier costs and freight. Call or text (954) 797-1123, or add them to your quote list and send a quote request. We reply with the current price, fitment confirmation and delivery.",
+    a: "Prices on some parts change with supplier costs and freight. Call or text (954) 798-1123, or add them to your quote list and send a quote request. We reply with the current price, fitment confirmation and delivery.",
   },
   {
     q: "How much is delivery?",
@@ -21,7 +21,7 @@ export const FAQS = [
   },
   {
     q: "How do I order and pay?",
-    a: "We do not take payments on the website. Send a quote request, call or text (954) 797-1123, or email pristinecustomwheels@gmail.com. We confirm fitment and your final price, then arrange payment with you by phone or at pickup.",
+    a: "We do not take payments on the website. Send a quote request, call or text (954) 798-1123 (Para Español: (772) 584-9512), or email pristinecustomwheels@gmail.com. We confirm fitment and your final price, then arrange payment with you by phone or at pickup.",
   },
   {
     q: "Do you sell complete trailer axles and mounted tire and wheel assemblies?",

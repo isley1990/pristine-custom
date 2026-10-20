@@ -9,7 +9,7 @@ import { SITE } from "./site";
  *   RESEND_FROM      Sender, e.g. "Pristine Custom <avisos@yourdomain.com>". Defaults to Resend's test sender,
  *                    which can only deliver to the Resend account owner's own address until a domain is verified.
  *   NOTIFY_EMAIL     Comma-separated recipients. Defaults to the business email.
- *   WHATSAPP_NOTIFY  Comma-separated "phone:apikey" pairs from CallMeBot, e.g. "+19547971123:1234567".
+ *   WHATSAPP_NOTIFY  Comma-separated "phone:apikey" pairs from CallMeBot, e.g. "+19547981123:1234567".
  */
 
 export type Alert = {

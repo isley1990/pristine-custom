@@ -11,9 +11,9 @@ export const Route = createFileRoute("/llms.txt")({
         const o = process.env.SITE_URL || new URL(request.url).origin;
         const facts = [
           "## Key facts",
-          "- Store: Pristine Custom Wheels & Trailer Parts, 1621 91st Ct, Vero Beach, FL 32966, USA. Phone and text: +1 (954) 797-1123. Email: pristinecustomwheels@gmail.com.",
+          "- Store: Pristine Custom Wheels & Trailer Parts, 1621 91st Ct, Vero Beach, FL 32966, USA. Phone and text: +1 (954) 798-1123. Spanish line (Para Español): +1 (772) 584-9512. Email: pristinecustomwheels@gmail.com.",
           "- Catalog: 2,300+ trailer parts with part numbers, photos and online prices; brands include Dexter, Kodiak, Demco, Dutton-Lainson, LoadStar, TecNiq, DeeMaxx, Knott and CE Smith.",
-          "- Ordering: no online payment. Add parts to the quote list and send a quote request on the website, call or text +1 (954) 797-1123, or email pristinecustomwheels@gmail.com. The shop confirms fitment, delivery and the final price, then arranges payment by phone or at pickup.",
+          "- Ordering: no online payment. Add parts to the quote list and send a quote request on the website, call or text +1 (954) 798-1123, or email pristinecustomwheels@gmail.com. The shop confirms fitment, delivery and the final price, then arranges payment by phone or at pickup.",
           "- Delivery: local delivery priced by road distance from Vero Beach; the exact fee is included in the quote.",
           "- Pickup: free store pickup in Vero Beach, FL.",
           "- Returns: unused parts in original packaging within 30 days; we cover shipping both ways if we sent the wrong part.",
@@ -38,7 +38,7 @@ export const Route = createFileRoute("/llms.txt")({
           "",
           "## Company",
           `- [About Us](${o}/about)`,
-          `- [Contact Us](${o}/contact): call or text +1 (954) 797-1123, email pristinecustomwheels@gmail.com, shop at 1621 91st Ct, Vero Beach, FL 32966 (store pickup available; local delivery priced by distance)`,
+          `- [Contact Us](${o}/contact): call or text +1 (954) 798-1123 (Spanish: +1 (772) 584-9512), email pristinecustomwheels@gmail.com, shop at 1621 91st Ct, Vero Beach, FL 32966 (store pickup available; local delivery priced by distance)`,
           `- [Delivery, Pickup and Return Policy](${o}/shipping-returns)`,
           "",
           "## FAQ",

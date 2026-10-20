@@ -76,7 +76,7 @@ export function QuoteSection() {
             Tell us what <span className="pc-red-text">you tow.</span>
           </h2>
           <p className="pc-lede">
-            Wheels, tires or a full axle swap. Send the details, or call (954) 797-1123, and we reply by phone or email with parts that fit and a price. No payment online.
+            Wheels, tires or a full axle swap. Send the details, or call (954) 798-1123, and we reply by phone or email with parts that fit and a price. No payment online.
           </p>
           <div className="pc-list pc-glass">
             <h3 className="pc-list__title">Your quote list</h3>

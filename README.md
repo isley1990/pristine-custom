@@ -15,7 +15,7 @@ Stack: TanStack Start (React 19, SSR) + Nitro, deployed on Vercel. Data in Supab
 | `RESEND_API_KEY` | Email alerts for new quote requests and messages (Resend) |
 | `RESEND_FROM` | Alert sender, e.g. `Pristine Custom <avisos@domain.com>` (needs a domain verified in Resend) |
 | `NOTIFY_EMAIL` | Alert recipients, comma-separated (default: the business email) |
-| `WHATSAPP_NOTIFY` | WhatsApp alerts via CallMeBot: `+19547971123:APIKEY`, comma-separated for several phones |
+| `WHATSAPP_NOTIFY` | WhatsApp alerts via CallMeBot: `+19547981123:APIKEY`, comma-separated for several phones |
 
 ## Database
 

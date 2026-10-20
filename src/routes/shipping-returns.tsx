@@ -18,7 +18,7 @@ const sections = [
   {
     h: "Order processing",
     p: [
-      "Orders are placed by quote request on the website, by phone at (954) 797-1123, or by email. Nothing is charged online: we confirm your final price first and arrange payment by phone or at pickup.",
+      "Orders are placed by quote request on the website, by phone at (954) 798-1123, or by email. Nothing is charged online: we confirm your final price first and arrange payment by phone or at pickup.",
       "We check fitment and availability on every order. If something will not fit your trailer, we call you before it leaves the shop and swap or refund it.",
       "Orders are prepared within 1 to 2 business days.",
     ],
@@ -29,7 +29,7 @@ const sections = [
       "Store pickup is free at 1621 91st Ct, Vero Beach, FL 32966. We call or text when your order is ready.",
       "Local delivery is priced by road distance from our shop: a base fee covers the first miles, then a per-mile rate. We include the exact fee for your address in your quote.",
       "Large orders close to the shop can qualify for free delivery; we tell you in your quote.",
-      "Farther than our delivery range? Call or text (954) 797-1123 for parcel or freight options.",
+      "Farther than our delivery range? Call or text (954) 798-1123 for parcel or freight options.",
       "Inspect every package on delivery. Report visible freight damage on the delivery receipt and contact us within 48 hours.",
     ],
   },

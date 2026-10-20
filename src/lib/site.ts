@@ -6,9 +6,13 @@ export const SITE = {
   description:
     "Trailer parts, custom trailer wheels and tires, axles, brakes, lights and boat trailer parts. Search 2,300+ parts by part number and request a fitment-checked quote.",
   logo: "/assets/brand/logo_main.webp",
-  phone: "+1-954-797-1123",
-  phoneHref: "tel:+19547971123",
-  phoneDisplay: "(954) 797-1123",
+  phone: "+1-954-798-1123",
+  phoneHref: "tel:+19547981123",
+  phoneDisplay: "(954) 798-1123",
+  /** Spanish-speaking line. */
+  phoneEs: "+1-772-584-9512",
+  phoneEsHref: "tel:+17725849512",
+  phoneEsDisplay: "(772) 584-9512",
   email: "pristinecustomwheels@gmail.com",
   address: { street: "1621 91st Ct", city: "Vero Beach", region: "FL", postalCode: "32966", country: "US" },
   addressLine: "1621 91st Ct, Vero Beach, FL 32966",
@@ -86,7 +90,10 @@ export const orgJsonLd = () => ({
   areaServed: [{ "@type": "State", name: "Florida" }, { "@type": "Country", name: "United States" }],
   currenciesAccepted: "USD",
   email: SITE.email,
-  contactPoint: [{ "@type": "ContactPoint", contactType: "sales", telephone: SITE.phone, email: SITE.email, areaServed: "US", availableLanguage: ["English", "Spanish"] }],
+  contactPoint: [
+    { "@type": "ContactPoint", contactType: "sales", telephone: SITE.phone, email: SITE.email, areaServed: "US", availableLanguage: ["English"] },
+    { "@type": "ContactPoint", contactType: "sales", telephone: SITE.phoneEs, email: SITE.email, areaServed: "US", availableLanguage: ["Spanish"] },
+  ],
   knowsAbout: [
     "Trailer wheels", "Trailer tires", "Trailer axles", "Trailer brakes", "Boat trailer parts",
     "Trailer lights and wiring", "Leaf springs", "Trailer couplers", "Trailer jacks", "Trailer fenders",

@@ -88,16 +88,50 @@ async function sendEmail(a: Alert) {
   if (!res.ok) throw new Error(`Resend ${res.status}: ${(await res.text()).slice(0, 300)}`);
 }
 
+const mask = (s: string) => (s.length <= 4 ? "****" : `${s.slice(0, 2)}…${s.slice(-2)} (${s.length} chars)`);
+
+/**
+ * Reads WHATSAPP_NOTIFY tolerantly. Accepts "+19547981123:1234567", "+1 954 798 1123 = 1234567",
+ * "phone=+19547981123&apikey=1234567", quotes and spaces, several entries separated by commas or new lines.
+ * CallMeBot API keys are numeric; anything else is logged (masked) and skipped.
+ */
+export function parseWhatsAppTargets(raw: string) {
+  const out: { phone: string; apikey: string }[] = [];
+  for (const entry of raw.replace(/["'`]/g, "").split(/[,\n;]+/).map((s) => s.trim()).filter(Boolean)) {
+    const named = /phone\s*[=:]\s*([+\d\s().-]+).*?api\s*key\s*[=:]\s*(\S+)/i.exec(entry) || /api\s*key\s*[=:]\s*(\S+).*?phone\s*[=:]\s*([+\d\s().-]+)/i.exec(entry);
+    let phone: string;
+    let apikey: string;
+    if (named) {
+      const swapped = /^api/i.test(entry.trim());
+      phone = swapped ? named[2] : named[1];
+      apikey = swapped ? named[1] : named[2];
+    } else {
+      const m = /^([+\d\s().-]+?)\s*[:=|\s]\s*([A-Za-z0-9]+)$/.exec(entry);
+      if (!m) {
+        console.error(`[notify] WHATSAPP_NOTIFY entry not understood: "${mask(entry)}". Use +19547981123:APIKEY`);
+        continue;
+      }
+      phone = m[1];
+      apikey = m[2];
+    }
+    const digits = phone.replace(/\D/g, "");
+    phone = digits.length === 10 ? `+1${digits}` : `+${digits}`;
+    apikey = apikey.trim();
+    if (digits.length < 10) {
+      console.error(`[notify] WHATSAPP_NOTIFY phone looks wrong: "${mask(phone)}"`);
+      continue;
+    }
+    if (!/^\d{4,10}$/.test(apikey)) {
+      console.error(`[notify] WHATSAPP_NOTIFY apikey for ${phone} should be the number CallMeBot sent you, got "${mask(apikey)}"`);
+      continue;
+    }
+    out.push({ phone, apikey });
+  }
+  return out;
+}
+
 async function sendWhatsApp(a: Alert) {
-  const targets = (process.env.WHATSAPP_NOTIFY || "")
-    .split(",")
-    .map((p) => p.trim())
-    .filter(Boolean)
-    .map((p) => {
-      const i = p.lastIndexOf(":");
-      return { phone: p.slice(0, i).trim(), apikey: p.slice(i + 1).trim() };
-    })
-    .filter((t) => t.phone && t.apikey);
+  const targets = parseWhatsAppTargets(process.env.WHATSAPP_NOTIFY || "");
   if (!targets.length) return;
   const body = [
     `*${title(a)}*`,

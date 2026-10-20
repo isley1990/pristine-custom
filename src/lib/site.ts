@@ -2,7 +2,7 @@
 export const SITE = {
   name: "Pristine Custom Wheels & Trailer Parts",
   shortName: "Pristine Custom",
-  url: (typeof process !== "undefined" && process.env?.SITE_URL) || "https://pristine-custom.vercel.app",
+  url: (typeof process !== "undefined" && process.env?.SITE_URL) || "https://www.pristinecustomwheels.com",
   description:
     "Trailer parts, custom trailer wheels and tires, axles, brakes, lights and boat trailer parts. Search 2,300+ parts by part number and request a fitment-checked quote.",
   logo: "/assets/brand/logo_main.webp",

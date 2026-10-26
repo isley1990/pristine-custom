@@ -1189,3 +1189,110 @@ a.pc-drawer__name:hover { text-decoration: underline; }
 .pc-admin .pc-editor__rmphoto { padding: 0.45rem 0.8rem; border: 1px solid var(--pc-red); border-radius: 10px; background: transparent; color: var(--pc-ink); font-size: 0.9rem; }
 .pc-admin .pc-editor__rmphoto:hover { background: var(--pc-red); color: #fff; }
 .pc-editor__photoactions small { font-size: 0.78rem; }
+
+/* ---------- One container for everything: header, film panels, sections ---------- */
+:root { --pc-max: 1520px; --pc-gutter: 1rem; --pc-edge: max(var(--pc-gutter), calc((100% - var(--pc-max)) / 2)); }
+.pc-wrap { width: min(var(--pc-max), calc(100% - 2 * var(--pc-gutter))); }
+.pc-header { left: var(--pc-edge); right: var(--pc-edge); top: 0.5rem; }
+@media (max-width: 980px) { :root { --pc-gutter: 0.6rem; } .pc-header { left: var(--pc-edge); right: var(--pc-edge); } }
+
+/* ---------- Compact pass 2 ---------- */
+@media (min-width: 981px) {
+  .pc-header__bar { gap: 1.1rem; padding: 0.4rem 0.75rem 0.4rem 0.9rem; }
+  .pc-header__logo img { height: 62px; }
+  .pc-header__main { gap: 0.35rem; }
+}
+.pc-section { padding: clamp(1.75rem, 3.5vw, 3rem) 0; }
+.pc-display { font-size: clamp(1.9rem, 3.8vw, 3.2rem); }
+.pc-subpage, .pc-admin { padding-top: 7.25rem; }
+.pc-page .scroll-scrub__chapter-pin,
+.pc-page .scroll-scrub__chapter[data-align="right"] .scroll-scrub__chapter-pin { padding: 7rem var(--pc-edge) 5.5rem; gap: clamp(1rem, 3vw, 3rem); }
+.pc-page .scroll-scrub__copy { width: min(32rem, 40vw); padding: clamp(1.25rem, 2vw, 1.9rem); }
+.pc-page .scroll-scrub__title { font-size: clamp(2rem, 3.5vw, 3.4rem); }
+.pc-page .scroll-scrub__body { margin-top: 1rem; font-size: 1.05rem; }
+.pc-page .scroll-scrub__actions { margin-top: 1.4rem; }
+
+/* ---------- Film companion panels ---------- */
+.scroll-scrub__chapter-pin[data-has-aside] { justify-content: space-between !important; }
+.scroll-scrub__chapter[data-align="left"] .scroll-scrub__aside { order: 2; }
+.scroll-scrub__aside { pointer-events: auto; }
+.pc-fp {
+  width: min(29rem, 32vw); padding: 1.1rem 1.2rem 1rem;
+  background: linear-gradient(135deg, rgba(20, 22, 27, 0.72), rgba(20, 22, 27, 0.5));
+  border: 1px solid var(--pc-line); border-radius: var(--pc-radius); box-shadow: var(--pc-glass-shadow);
+  -webkit-backdrop-filter: saturate(150%) blur(20px); backdrop-filter: saturate(150%) blur(20px);
+}
+.pc-fp__title { margin: 0 0 0.75rem; font-family: var(--pc-font-display); font-style: italic; font-weight: 800; font-size: 1.05rem; text-transform: uppercase; letter-spacing: 0.01em; color: var(--pc-ink); }
+.pc-fp ul, .pc-fp ol { margin: 0; padding: 0; list-style: none; }
+.pc-fp a { color: inherit; text-decoration: none; }
+.pc-fp small { display: block; color: var(--pc-muted); font-size: 0.8rem; line-height: 1.35; }
+.pc-fp b { display: block; font-weight: 600; font-size: 0.92rem; line-height: 1.3; }
+.pc-fp__more { display: inline-flex; align-items: center; gap: 0.35rem; margin-top: 0.8rem; color: var(--pc-ink-2) !important; font-size: 0.86rem; font-weight: 600; }
+.pc-fp__more:hover { color: #fff !important; }
+.pc-fp__more svg { width: 14px; height: 14px; color: var(--pc-red-hot); }
+
+/* categories: 2-column tiles */
+.pc-fp__cats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.pc-fp__cats a { display: flex; align-items: center; gap: 0.6rem; padding: 0.4rem 0.5rem 0.4rem 0.4rem; border: 1px solid var(--pc-line); border-radius: 10px; background: rgba(255, 255, 255, 0.05); transition: border-color 0.2s, background-color 0.2s; }
+.pc-fp__cats a:hover { border-color: var(--pc-red-hot); background: rgba(255, 255, 255, 0.09); }
+.pc-fp__cats img { width: 44px; height: 44px; flex: none; border-radius: 7px; object-fit: cover; }
+.pc-fp__cats b { font-family: var(--pc-font-display); font-style: italic; font-size: 0.84rem; text-transform: uppercase; }
+
+/* bolt patterns */
+.pc-fp__lugs { display: grid; gap: 4px; }
+.pc-fp__lugs a { display: grid; grid-template-columns: 48px 1fr 14px; align-items: center; gap: 0.75rem; padding: 0.45rem 0.55rem; border-radius: 10px; transition: background-color 0.2s; }
+.pc-fp__lugs a:hover { background: rgba(255, 255, 255, 0.07); }
+.pc-fp__lugs li + li { border-top: 1px solid rgba(255, 255, 255, 0.08); }
+.pc-fp__lug { color: var(--pc-ink); }
+.pc-fp__lugs b { font-family: var(--pc-font-mono); font-size: 0.86rem; font-weight: 600; }
+.pc-fp__lugs svg:last-child { width: 14px; height: 14px; color: var(--pc-muted); }
+
+/* featured parts */
+.pc-fp__parts { display: grid; gap: 6px; }
+.pc-fp__parts a { display: grid; grid-template-columns: 56px 1fr auto; align-items: center; gap: 0.75rem; padding: 0.35rem 0.45rem; border-radius: 10px; transition: background-color 0.2s; }
+.pc-fp__parts a:hover { background: rgba(255, 255, 255, 0.07); }
+.pc-fp__parts img { width: 56px; height: 56px; border-radius: 8px; background: #fff; object-fit: contain; padding: 3px; box-sizing: border-box; }
+.pc-fp__parts b { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 0.86rem; }
+.pc-fp__parts small { font-family: var(--pc-font-mono); font-size: 0.72rem; }
+.pc-fp__parts em { font-style: italic; font-family: var(--pc-font-display); font-weight: 800; font-size: 1rem; }
+
+/* quote steps: a real sequence, so it is numbered */
+.pc-fp__steps { counter-reset: step; display: grid; gap: 0.7rem; }
+.pc-fp__steps li { counter-increment: step; position: relative; padding-left: 2.6rem; }
+.pc-fp__steps li::before { content: counter(step); position: absolute; left: 0; top: 0.05rem; display: grid; place-items: center; width: 1.8rem; height: 1.8rem; border-radius: 50%; background: linear-gradient(180deg, var(--pc-red-hot), var(--pc-red-deep)); color: #fff; font-family: var(--pc-font-display); font-style: italic; font-weight: 800; font-size: 0.9rem; }
+.pc-fp__phones { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.95rem; }
+.pc-fp__phones a { padding: 0.45rem 0.75rem; border: 1px solid var(--pc-line-2); border-radius: 10px; font-family: var(--pc-font-display); font-style: italic; font-weight: 700; font-size: 0.88rem; }
+.pc-fp__phones a:hover { border-color: var(--pc-red-hot); }
+
+@media (max-width: 1100px) {
+  .scroll-scrub__aside { display: none; }
+  .scroll-scrub__chapter-pin[data-has-aside] { justify-content: flex-start !important; }
+  .pc-page .scroll-scrub__chapter[data-align="right"] .scroll-scrub__chapter-pin[data-has-aside] { justify-content: flex-end !important; }
+  .pc-page .scroll-scrub__copy { width: min(34rem, 60vw); }
+}
+@media (max-width: 860px) {
+  .pc-page .scroll-scrub__chapter-pin,
+  .pc-page .scroll-scrub__chapter[data-align="right"] .scroll-scrub__chapter-pin { padding: 6.5rem var(--pc-edge) 5.25rem; }
+  .pc-page .scroll-scrub__chapter[data-align="right"] .scroll-scrub__chapter-pin[data-has-aside] { justify-content: flex-start !important; }
+  .pc-page .scroll-scrub__copy { width: 100%; }
+}
+@media (max-width: 980px) {
+  .pc-page .scroll-scrub__chapter-pin,
+  .pc-page .scroll-scrub__chapter[data-align="right"] .scroll-scrub__chapter-pin { padding-top: 9rem; }
+}
+/* Wide screens: copy and companion panel share one row, same height, edges on the container. */
+@media (min-width: 1101px) {
+  .pc-page .scroll-scrub__chapter-pin[data-has-aside] {
+    display: grid; grid-template-columns: minmax(0, 34rem) minmax(0, 32rem);
+    justify-content: space-between; align-content: center; align-items: stretch;
+  }
+  .pc-page .scroll-scrub__chapter[data-align="right"] .scroll-scrub__chapter-pin[data-has-aside] { grid-template-columns: minmax(0, 32rem) minmax(0, 34rem); }
+  .pc-page .scroll-scrub__chapter-pin[data-has-aside] .scroll-scrub__copy { width: auto; display: flex; flex-direction: column; justify-content: center; }
+  .pc-page .scroll-scrub__chapter-pin[data-has-aside] .scroll-scrub__aside { display: flex; }
+  .pc-page .scroll-scrub__chapter-pin[data-has-aside] .pc-fp { width: auto; flex: 1; display: flex; flex-direction: column; }
+  .pc-fp > ul, .pc-fp > ol { flex: 1; align-content: center; }
+}
+/* Same smoked glass as the panels, so copy stays readable over bright frames. */
+.pc-page .scroll-scrub__copy { background: linear-gradient(135deg, rgba(20, 22, 27, 0.72), rgba(20, 22, 27, 0.5)); }
+/* Home "Ready to bolt on" row spans the full container width. */
+.pc-featured .pc-pgrid { grid-template-columns: repeat(auto-fit, minmax(168px, 1fr)); }

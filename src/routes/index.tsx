@@ -1,10 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useMemo } from "react";
 
-import { ScrollScrub, type ScrollScrubScene } from "@/components/scroll-scrub/scroll-scrub";
+import { ScrollScrub } from "@/components/scroll-scrub/scroll-scrub";
+import type { ProductCard } from "@/lib/api/products.functions";
 import { CatalogSection } from "@/components/site/catalog-section";
 import { BrowseButton, ClosingQuoteButton, HeroQuoteButton } from "@/components/site/ctas";
 import { FaqSection, faqJsonLd } from "@/components/site/faq-section";
 import { FitmentGuide } from "@/components/site/fitment-guide";
+import { BoltPatternPanel, CategoryPanel, FeaturedPanel, QuoteStepsPanel } from "@/components/site/hero-panels";
 import { QuoteSection } from "@/components/site/quote-section";
 import { ValueRail } from "@/components/site/value-rail";
 import { getCategoryCounts, getFeatured } from "@/lib/api/products.functions";
@@ -26,27 +29,27 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-// Module constant: chapter CTAs attached once, so the scrub controller never rebuilds.
-const scenes: ScrollScrubScene[] = scrollScrubScenes.map((scene, index) => {
-  if (index === 0) {
-    return {
-      ...scene,
-      actions: (
+// Chapter CTAs and companion panels. Built once from loader data (stable), so the scrub controller never rebuilds.
+function buildScenes(counts: Record<string, number>, featured: ProductCard[]) {
+  const asides = [<CategoryPanel counts={counts} />, <BoltPatternPanel />, <FeaturedPanel items={featured} />, <QuoteStepsPanel />];
+  return scrollScrubScenes.map((scene, index) => ({
+    ...scene,
+    aside: asides[index],
+    actions:
+      index === 0 ? (
         <>
           <HeroQuoteButton />
           <BrowseButton />
         </>
-      ),
-    };
-  }
-  if (index === scrollScrubScenes.length - 1) {
-    return { ...scene, actions: <ClosingQuoteButton /> };
-  }
-  return scene;
-});
+      ) : index === scrollScrubScenes.length - 1 ? (
+        <ClosingQuoteButton />
+      ) : undefined,
+  }));
+}
 
 function Index() {
   const { counts, featured } = Route.useLoaderData();
+  const scenes = useMemo(() => buildScenes(counts, featured), [counts, featured]);
   return (
     <main className="pc-page">
       <ScrollScrub scenes={scenes} theme={scrollScrubTheme} />

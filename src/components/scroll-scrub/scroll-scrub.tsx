@@ -19,6 +19,8 @@ export interface ScrollScrubScene {
   kicker?: string;
   tags?: string[];
   actions?: ReactNode;
+  /** Optional companion panel shown on the opposite side of the copy (wide screens). */
+  aside?: ReactNode;
   align?: "left" | "right";
   /** Viewport-heights assigned to this scene. More distance means slower scrub. */
   scroll?: number;
@@ -681,7 +683,8 @@ export function ScrollScrub({
               key={segment.key}
               style={bandStyle}
             >
-              <div className="scroll-scrub__chapter-pin">
+              <div className="scroll-scrub__chapter-pin" data-has-aside={scene.aside ? "" : undefined}>
+                {scene.aside ? <div className="scroll-scrub__aside">{scene.aside}</div> : null}
                 <div className="scroll-scrub__copy">
                   {scene.kicker ? (
                     <p className="scroll-scrub__kicker">{scene.kicker}</p>

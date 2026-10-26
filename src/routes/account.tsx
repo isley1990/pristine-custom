@@ -14,7 +14,7 @@ export const Route = createFileRoute("/account")({
   component: Account,
 });
 
-type Found = { id: number; created_at: string; name: string; category: string; items: string; details: string | null };
+type Found = { id: number; created_at: string; name: string; category: string; items: string; details: string | null; status: string };
 
 function parseItems(raw: string): string[] {
   try {
@@ -128,7 +128,7 @@ function Account() {
           {found ? (
             <div className="pc-account__result">
               <h3>Request #{found.id}</h3>
-              <p className="pc-account__meta">Sent {found.created_at} UTC · {found.category} · Status: received</p>
+              <p className="pc-account__meta">Sent {found.created_at} UTC · {found.category} · Status: {found.status}</p>
               {parseItems(found.items).length ? (
                 <ul>
                   {parseItems(found.items).map((line) => (

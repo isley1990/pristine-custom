@@ -102,7 +102,7 @@ export const adminStats = createServerFn({ method: "GET" }).handler(async () => 
     head().eq("active", true).then(n),
     head().eq("active", true).is("price", null).then(n),
     head().eq("in_stock", false).then(n),
-    db().from("pristine_quote_requests").select("id", { count: "exact", head: true }).then(n),
+    db().from("pristine_quote_requests").select("id", { count: "exact", head: true }).eq("status", "new").then(n),
     db().from("pristine_contact_messages").select("id", { count: "exact", head: true }).then(n),
   ]);
   return { total, active, noPrice, outOfStock, quotes, messages };
@@ -234,22 +234,93 @@ export const adminUploadImage = createServerFn({ method: "POST" })
     return { path, url: productImage(path, "tires-wheels") };
   });
 
-export const adminListQuotes = createServerFn({ method: "GET" }).handler(async () => {
-  requireAdmin();
-  const { data, error } = await db()
-    .from("pristine_quote_requests")
-    .select("id, created_at, name, phone, email, category, items, details")
-    .order("id", { ascending: false })
-    .limit(200);
-  if (error) throw new Error("Could not load quote requests.");
-  return {
-    rows: (data ?? []).map((r) => ({
-      ...r,
-      created_at: String(r.created_at).replace("T", " ").slice(0, 16),
-      items: Array.isArray(r.items) ? (r.items as string[]) : [],
-    })),
-  };
+export const QUOTE_STATUSES = ["new", "contacted", "quoted", "won", "lost"] as const;
+export type QuoteStatus = (typeof QUOTE_STATUSES)[number];
+
+export type AdminQuote = {
+  id: number;
+  created_at: string;
+  updated_at: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  category: string;
+  items: string[];
+  details: string | null;
+  status: QuoteStatus;
+  quoted_total: number | null;
+  admin_notes: string | null;
+};
+
+const QUOTE_COLS = "id, created_at, updated_at, name, phone, email, category, items, details, status, quoted_total, admin_notes";
+const fmtTs = (v: unknown) => String(v ?? "").replace("T", " ").slice(0, 16);
+const toQuote = (r: Record<string, unknown>): AdminQuote => ({
+  ...(r as Omit<AdminQuote, "items" | "created_at" | "updated_at" | "quoted_total">),
+  created_at: fmtTs(r.created_at),
+  updated_at: fmtTs(r.updated_at),
+  items: Array.isArray(r.items) ? (r.items as string[]) : [],
+  quoted_total: r.quoted_total == null ? null : Number(r.quoted_total),
 });
+
+export const adminListQuotes = createServerFn({ method: "GET" })
+  .validator(
+    z
+      .object({
+        status: z.enum(["open", "all", ...QUOTE_STATUSES]).default("open"),
+        q: z.string().trim().max(100).default(""),
+      })
+      .default({ status: "open", q: "" }),
+  )
+  .handler(async ({ data }) => {
+    requireAdmin();
+    let query = db().from("pristine_quote_requests").select(QUOTE_COLS).order("id", { ascending: false }).limit(300);
+    if (data.status === "open") query = query.in("status", ["new", "contacted", "quoted"]);
+    else if (data.status !== "all") query = query.eq("status", data.status);
+    if (data.q) {
+      const term = data.q.replace(/[%_\\,()]/g, " ").trim();
+      const asId = /^#?\d+$/.test(data.q) ? Number(data.q.replace("#", "")) : null;
+      query = asId
+        ? query.eq("id", asId)
+        : query.or(`name.ilike.%${term}%,email.ilike.%${term}%,phone.ilike.%${term}%,details.ilike.%${term}%`);
+    }
+    const [{ data: rows, error }, counts] = await Promise.all([
+      query,
+      db().from("pristine_quote_requests").select("status").then((r) => r.data ?? []),
+    ]);
+    if (error) throw new Error("Could not load quote requests.");
+    const byStatus = Object.fromEntries(QUOTE_STATUSES.map((st) => [st, counts.filter((c) => c.status === st).length])) as Record<QuoteStatus, number>;
+    return { rows: (rows ?? []).map(toQuote), counts: byStatus };
+  });
+
+export const adminUpdateQuote = createServerFn({ method: "POST" })
+  .validator(
+    z.object({
+      id: z.number().int().positive(),
+      status: z.enum(QUOTE_STATUSES),
+      quoted_total: z.number().min(0).max(1_000_000).nullable(),
+      admin_notes: z.string().trim().max(5000).nullable(),
+    }),
+  )
+  .handler(async ({ data }) => {
+    requireAdmin();
+    const { data: row, error } = await db()
+      .from("pristine_quote_requests")
+      .update({ status: data.status, quoted_total: data.quoted_total, admin_notes: data.admin_notes || null, updated_at: new Date().toISOString() })
+      .eq("id", data.id)
+      .select(QUOTE_COLS)
+      .single();
+    if (error || !row) throw new Error("Could not save the quote request.");
+    return toQuote(row);
+  });
+
+export const adminDeleteQuote = createServerFn({ method: "POST" })
+  .validator(z.object({ id: z.number().int().positive() }))
+  .handler(async ({ data }) => {
+    requireAdmin();
+    const { error } = await db().from("pristine_quote_requests").delete().eq("id", data.id);
+    if (error) throw new Error("Could not delete the quote request.");
+    return { ok: true as const };
+  });
 
 export const adminListMessages = createServerFn({ method: "GET" }).handler(async () => {
   requireAdmin();

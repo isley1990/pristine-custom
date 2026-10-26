@@ -8,6 +8,10 @@ import {
   adminListMessages,
   adminListProducts,
   adminListQuotes,
+  adminUpdateQuote,
+  adminDeleteQuote,
+  type AdminQuote,
+  type QuoteStatus,
   adminLogin,
   adminLogout,
   adminSaveProduct,
@@ -95,7 +99,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
             <li><strong>{stats.active.toLocaleString("en-US")}</strong> visible</li>
             <li><strong>{stats.noPrice.toLocaleString("en-US")}</strong> without price</li>
             <li><strong>{stats.outOfStock}</strong> special order</li>
-            <li><strong>{stats.quotes}</strong> quote requests</li>
+            <li><strong>{stats.quotes}</strong> new quote requests</li>
             <li><strong>{stats.messages}</strong> messages</li>
           </ul>
         ) : null}
@@ -480,32 +484,162 @@ function ContactLinks({ phone, email, subject }: { phone: string | null; email: 
   );
 }
 
+const QUOTE_LABEL: Record<QuoteStatus, string> = { new: "New", contacted: "Contacted", quoted: "Quoted", won: "Won", lost: "Lost" };
+const QUOTE_FILTERS: [string, string][] = [["open", "Open"], ["new", "New"], ["contacted", "Contacted"], ["quoted", "Quoted"], ["won", "Won"], ["lost", "Lost"], ["all", "All"]];
+
+function replyBody(r: AdminQuote) {
+  const lines = [
+    `Hi ${r.name.split(" ")[0]},`,
+    "",
+    `Thanks for your quote request #${r.id} with Pristine Custom Wheels & Trailer Parts.`,
+  ];
+  if (r.items.length) lines.push("", "Parts:", ...r.items.map((i) => `- ${i}`));
+  if (r.quoted_total != null) lines.push("", `Total: ${formatPrice(r.quoted_total)} (before delivery and tax)`);
+  lines.push("", "Reply to this email or call (954) 798-1123 to confirm. Para español: (772) 584-9512.", "", "Pristine Custom Wheels & Trailer Parts");
+  return lines.join("\n");
+}
+
 function Quotes() {
-  const [rows, setRows] = useState<Awaited<ReturnType<typeof adminListQuotes>>["rows"] | null>(null);
-  useEffect(() => {
-    adminListQuotes().then((r) => setRows(r.rows)).catch(() => setRows([]));
-  }, []);
-  if (!rows) return <p className="pc-admin__msg">Loading…</p>;
-  if (!rows.length) return <p className="pc-admin__msg">No quote requests yet.</p>;
+  const [filter, setFilter] = useState("open");
+  const [q, setQ] = useState("");
+  const [qInput, setQInput] = useState("");
+  const [data, setData] = useState<Awaited<ReturnType<typeof adminListQuotes>> | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<number | null>(null);
+
+  const load = useCallback(() => {
+    setError(null);
+    adminListQuotes({ data: { status: filter as "open", q } })
+      .then(setData)
+      .catch(() => setError("Could not load quote requests."));
+  }, [filter, q]);
+  useEffect(load, [load]);
+
+  const counts = data?.counts;
+  const countFor = (k: string) =>
+    !counts ? null : k === "open" ? counts.new + counts.contacted + counts.quoted : k === "all" ? Object.values(counts).reduce((a, b) => a + b, 0) : counts[k as QuoteStatus];
+
   return (
-    <div className="pc-admin__tablewrap">
-      <table className="pc-admin__table">
-        <thead><tr><th>#</th><th>Date (UTC)</th><th>Name</th><th>Contact</th><th>Category</th><th>Parts</th><th>Details</th></tr></thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.id}>
-              <td className="pc-mono">{r.id}</td>
-              <td>{r.created_at}</td>
-              <td>{r.name}</td>
-              <td><ContactLinks phone={r.phone} email={r.email} subject={`Your Pristine Custom quote #${r.id}`} /></td>
-              <td>{r.category}</td>
-              <td>{r.items.length ? <ul>{r.items.map((i) => <li key={i}>{i}</li>)}</ul> : "None"}</td>
-              <td>{r.details ?? ""}</td>
-            </tr>
+    <section aria-label="Quote requests">
+      <div className="pc-quotes__bar">
+        <div className="pc-quotes__filters" role="group" aria-label="Filter by status">
+          {QUOTE_FILTERS.map(([k, label]) => (
+            <button aria-pressed={filter === k} key={k} onClick={() => { setFilter(k); setOpenId(null); }} type="button">
+              {label}{countFor(k) != null ? <span>{countFor(k)}</span> : null}
+            </button>
           ))}
-        </tbody>
-      </table>
-    </div>
+        </div>
+        <form className="pc-quotes__search" onSubmit={(e) => { e.preventDefault(); setQ(qInput.trim()); }}>
+          <input aria-label="Search quote requests" onChange={(e) => setQInput(e.target.value)} placeholder="Name, phone, email or #" type="search" value={qInput} />
+          <button type="submit">Search</button>
+        </form>
+      </div>
+      {error ? <p className="pc-error">{error}</p> : null}
+      {!data ? <p className="pc-admin__msg">Loading…</p> : !data.rows.length ? (
+        <p className="pc-admin__msg">{q ? "No quote requests match that search." : "No quote requests here."}</p>
+      ) : (
+        <ul className="pc-quotes">
+          {data.rows.map((r) => (
+            <QuoteCard
+              key={r.id}
+              open={openId === r.id}
+              onToggle={() => setOpenId(openId === r.id ? null : r.id)}
+              onChanged={load}
+              r={r}
+            />
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function QuoteCard({ r, open, onToggle, onChanged }: { r: AdminQuote; open: boolean; onToggle: () => void; onChanged: () => void }) {
+  const [status, setStatus] = useState<QuoteStatus>(r.status);
+  const [total, setTotal] = useState(r.quoted_total == null ? "" : String(r.quoted_total));
+  const [notes, setNotes] = useState(r.admin_notes ?? "");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const dirty = status !== r.status || total !== (r.quoted_total == null ? "" : String(r.quoted_total)) || notes !== (r.admin_notes ?? "");
+
+  const save = async (next?: QuoteStatus) => {
+    const t = total.trim() === "" ? null : Number(total.replace(/[$,\s]/g, ""));
+    if (t != null && (!Number.isFinite(t) || t < 0)) return setMsg("Enter the quoted total as a number, like 249.99.");
+    setBusy(true);
+    setMsg(null);
+    try {
+      await adminUpdateQuote({ data: { id: r.id, status: next ?? status, quoted_total: t, admin_notes: notes.trim() || null } });
+      if (next) setStatus(next);
+      setMsg("Saved.");
+      onChanged();
+    } catch {
+      setMsg("Could not save. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async () => {
+    if (!window.confirm(`Delete quote request #${r.id} from ${r.name}? This cannot be undone.`)) return;
+    setBusy(true);
+    try {
+      await adminDeleteQuote({ data: { id: r.id } });
+      onChanged();
+    } catch {
+      setMsg("Could not delete. Try again.");
+      setBusy(false);
+    }
+  };
+
+  const mail = r.email
+    ? `mailto:${r.email}?subject=${encodeURIComponent(`Your Pristine Custom quote #${r.id}`)}&body=${encodeURIComponent(replyBody({ ...r, quoted_total: total.trim() === "" ? null : Number(total) || r.quoted_total }))}`
+    : null;
+
+  return (
+    <li className="pc-quote pc-glass" data-status={r.status}>
+      <button aria-expanded={open} className="pc-quote__head" onClick={onToggle} type="button">
+        <span className="pc-mono">#{r.id}</span>
+        <span className="pc-quote__who"><b>{r.name}</b><small>{r.created_at} UTC · {r.category} · {r.items.length} part{r.items.length === 1 ? "" : "s"}</small></span>
+        <span className="pc-quote__total">{r.quoted_total != null ? formatPrice(r.quoted_total) : ""}</span>
+        <span className={`pc-quote__badge pc-quote__badge--${r.status}`}>{QUOTE_LABEL[r.status]}</span>
+      </button>
+      {open ? (
+        <div className="pc-quote__body">
+          <div className="pc-quote__contact">
+            {r.phone ? <a className="pc-quote__btn" href={`tel:${r.phone.replace(/[^\d+]/g, "")}`}>Call {r.phone}</a> : null}
+            {mail ? <a className="pc-quote__btn" href={mail} onClick={() => status === "new" && save("contacted")}>Email {r.email}</a> : null}
+            {!r.phone && !r.email ? <span className="pc-muted">No contact info</span> : null}
+          </div>
+          <div className="pc-quote__grid">
+            <div>
+              <h4>Parts</h4>
+              {r.items.length ? <ul>{r.items.map((i) => <li key={i}>{i}</li>)}</ul> : <p className="pc-muted">None. See details.</p>}
+              <h4>Customer details</h4>
+              <p>{r.details || <span className="pc-muted">None</span>}</p>
+            </div>
+            <div className="pc-quote__manage">
+              <label>Status
+                <select onChange={(e) => setStatus(e.target.value as QuoteStatus)} value={status}>
+                  {(Object.keys(QUOTE_LABEL) as QuoteStatus[]).map((k) => <option key={k} value={k}>{QUOTE_LABEL[k]}</option>)}
+                </select>
+              </label>
+              <label>Quoted total (USD)
+                <input inputMode="decimal" onChange={(e) => setTotal(e.target.value)} placeholder="e.g. 749.99" value={total} />
+              </label>
+              <label>Private notes
+                <textarea onChange={(e) => setNotes(e.target.value)} placeholder="What you offered, follow-up date, pickup or delivery…" rows={4} value={notes} />
+              </label>
+              <div className="pc-quote__actions">
+                <button disabled={busy || !dirty} onClick={() => save()} type="button">{busy ? "Saving…" : "Save"}</button>
+                <button className="pc-quote__del" disabled={busy} onClick={remove} type="button">Delete</button>
+                {msg ? <span className="pc-muted" role="status">{msg}</span> : null}
+              </div>
+              {r.updated_at !== r.created_at ? <p className="pc-muted pc-quote__upd">Last updated {r.updated_at} UTC</p> : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </li>
   );
 }
 

@@ -32,6 +32,9 @@ export type ContactRow = {
 const toRow = (r: Record<string, unknown>): QuoteRow =>
   ({ ...r, items: JSON.stringify(r.items ?? []) }) as QuoteRow;
 
+// What the customer sees in My Account for each admin status.
+const PUBLIC_STATUS: Record<string, string> = { new: "Received", contacted: "In progress", quoted: "Quote sent", won: "Confirmed", lost: "Closed" };
+
 const fmtDate = (iso: string) => iso.replace("T", " ").slice(0, 19);
 
 const quoteInput = z.object({
@@ -111,7 +114,7 @@ export const trackRequest = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { data: row, error } = await db()
       .from(QUOTES)
-      .select("id, created_at, name, category, items, details")
+      .select("id, created_at, name, category, items, details, status")
       .eq("id", data.id)
       .ilike("email", data.email.replace(/[%_\\]/g, (m) => `\\${m}`))
       .maybeSingle();
@@ -126,6 +129,7 @@ export const trackRequest = createServerFn({ method: "POST" })
         category: r.category,
         items: r.items,
         details: r.details,
+        status: PUBLIC_STATUS[String((row as Record<string, unknown>).status)] ?? "Received",
       },
     };
   });

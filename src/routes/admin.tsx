@@ -326,7 +326,7 @@ function Editor({ initial, onClose, onSaved }: { initial: typeof EMPTY; onClose:
   const [priceText, setPriceText] = useState(initial.price == null ? "" : String(initial.price));
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [preview, setPreview] = useState<string | undefined>(initial.image);
+  const [preview, setPreview] = useState<string | undefined>(initial.image_path ? initial.image : undefined);
   const [error, setError] = useState<string | null>(null);
   const set = <K extends keyof typeof EMPTY>(k: K, v: (typeof EMPTY)[K]) => setF((s) => ({ ...s, [k]: v }));
 
@@ -393,10 +393,18 @@ function Editor({ initial, onClose, onSaved }: { initial: typeof EMPTY; onClose:
         <form className="pc-editor__form" onSubmit={save}>
           <div className="pc-editor__photo">
             {preview ? <img alt="" height={120} src={preview} width={120} /> : <div className="pc-editor__nophoto">No photo</div>}
-            <label className="pc-admin__upload">
-              {uploading ? "Uploading…" : "Upload photo"}
-              <input accept="image/*" disabled={uploading} onChange={(e) => upload(e.target.files?.[0])} type="file" />
-            </label>
+            <div className="pc-editor__photoactions">
+              <label className="pc-admin__upload">
+                {uploading ? "Uploading…" : f.image_path ? "Change photo" : "Upload photo"}
+                <input accept="image/*" disabled={uploading} onChange={(e) => { upload(e.target.files?.[0]); e.target.value = ""; }} type="file" />
+              </label>
+              {f.image_path ? (
+                <button className="pc-editor__rmphoto" disabled={uploading} onClick={() => { set("image_path", null); setPreview(undefined); }} type="button">Remove photo</button>
+              ) : (
+                <small className="pc-muted">The site shows the category picture.</small>
+              )}
+              {f.image_path !== initial.image_path ? <small className="pc-muted">Tap Save product to keep this change.</small> : null}
+            </div>
           </div>
           <div className="pc-row">
             <div className="pc-field">

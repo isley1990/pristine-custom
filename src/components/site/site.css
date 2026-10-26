@@ -1185,3 +1185,7 @@ a.pc-drawer__name:hover { text-decoration: underline; }
 .pc-admin .pc-admin__cats button:hover { color: var(--pc-ink); border-color: var(--pc-line-2); }
 .pc-admin .pc-admin__cats button[aria-pressed="true"] { background: var(--pc-red); border-color: var(--pc-red); color: #fff; }
 .pc-admin__cats button span { padding: 0 0.3rem; border-radius: 999px; background: rgba(255, 255, 255, 0.12); font-size: 0.7rem; }
+.pc-editor__photoactions { display: grid; gap: 0.45rem; justify-items: start; }
+.pc-admin .pc-editor__rmphoto { padding: 0.45rem 0.8rem; border: 1px solid var(--pc-red); border-radius: 10px; background: transparent; color: var(--pc-ink); font-size: 0.9rem; }
+.pc-admin .pc-editor__rmphoto:hover { background: var(--pc-red); color: #fff; }
+.pc-editor__photoactions small { font-size: 0.78rem; }

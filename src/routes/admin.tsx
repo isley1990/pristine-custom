@@ -7,6 +7,7 @@ import {
   adminImportPrices,
   adminListMessages,
   adminListProducts,
+  adminCategoryCounts,
   adminListQuotes,
   adminUpdateQuote,
   adminDeleteQuote,
@@ -147,6 +148,11 @@ function Products({ onChange }: { onChange: () => void }) {
   const [editing, setEditing] = useState<typeof EMPTY | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
 
+  const [catCounts, setCatCounts] = useState<Record<string, number> | null>(null);
+  useEffect(() => {
+    adminCategoryCounts().then(setCatCounts).catch(() => setCatCounts(null));
+  }, [data?.total]);
+
   const load = useCallback(() => {
     adminListProducts({ data: { ...filters, q: filters.q || undefined } })
       .then((d) => {
@@ -176,15 +182,11 @@ function Products({ onChange }: { onChange: () => void }) {
           role="search"
         >
           <label className="pc-sr" htmlFor="admin-q">Search products</label>
-          <input id="admin-q" onChange={(e) => setQInput(e.target.value)} placeholder="Part #, name or brand" type="search" value={qInput} />
+          <input id="admin-q" onChange={(e) => setQInput(e.target.value)} placeholder="Part #, name, brand or category" type="search" value={qInput} />
           <button type="submit">Search</button>
         </form>
-        <select aria-label="Category" onChange={(e) => setFilters((f) => ({ ...f, category: e.target.value, page: 1 }))} value={filters.category}>
-          <option value="all">All categories</option>
-          {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
         <select aria-label="Status" onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value as Filters["status"], page: 1 }))} value={filters.status}>
-          <option value="all">All</option>
+          <option value="all">All statuses</option>
           <option value="active">Visible</option>
           <option value="hidden">Hidden</option>
           <option value="no-price">No price</option>
@@ -192,6 +194,19 @@ function Products({ onChange }: { onChange: () => void }) {
           <option value="featured">Featured</option>
         </select>
         <button className="pc-cta-checkout pc-admin__new" onClick={() => setEditing({ ...EMPTY })} type="button">New product</button>
+        <div className="pc-admin__cats" role="group" aria-label="Filter by category">
+          {[{ id: "all", name: "All" }, ...categories].map((c) => (
+            <button
+              aria-pressed={filters.category === c.id}
+              key={c.id}
+              onClick={() => setFilters((f) => ({ ...f, category: c.id, page: 1 }))}
+              type="button"
+            >
+              {c.name}
+              {catCounts ? <span>{(c.id === "all" ? Object.values(catCounts).reduce((a, b) => a + b, 0) : catCounts[c.id] ?? 0).toLocaleString("en-US")}</span> : null}
+            </button>
+          ))}
+        </div>
       </div>
 
       {selected.length ? (
@@ -521,15 +536,15 @@ function Quotes() {
 
   return (
     <section aria-label="Quote requests">
-      <div className="pc-quotes__bar">
-        <div className="pc-quotes__filters" role="group" aria-label="Filter by status">
+      <div className="pc-qrs__bar">
+        <div className="pc-qrs__filters" role="group" aria-label="Filter by status">
           {QUOTE_FILTERS.map(([k, label]) => (
             <button aria-pressed={filter === k} key={k} onClick={() => { setFilter(k); setOpenId(null); }} type="button">
               {label}{countFor(k) != null ? <span>{countFor(k)}</span> : null}
             </button>
           ))}
         </div>
-        <form className="pc-quotes__search" onSubmit={(e) => { e.preventDefault(); setQ(qInput.trim()); }}>
+        <form className="pc-qrs__search" onSubmit={(e) => { e.preventDefault(); setQ(qInput.trim()); }}>
           <input aria-label="Search quote requests" onChange={(e) => setQInput(e.target.value)} placeholder="Name, phone, email or #" type="search" value={qInput} />
           <button type="submit">Search</button>
         </form>
@@ -538,7 +553,7 @@ function Quotes() {
       {!data ? <p className="pc-admin__msg">Loading…</p> : !data.rows.length ? (
         <p className="pc-admin__msg">{q ? "No quote requests match that search." : "No quote requests here."}</p>
       ) : (
-        <ul className="pc-quotes">
+        <ul className="pc-qrs">
           {data.rows.map((r) => (
             <QuoteCard
               key={r.id}
@@ -596,46 +611,39 @@ function QuoteCard({ r, open, onToggle, onChanged }: { r: AdminQuote; open: bool
     : null;
 
   return (
-    <li className="pc-quote pc-glass" data-status={r.status}>
-      <button aria-expanded={open} className="pc-quote__head" onClick={onToggle} type="button">
+    <li className="pc-qr pc-glass" data-status={r.status}>
+      <button aria-expanded={open} className="pc-qr__head" onClick={onToggle} type="button">
         <span className="pc-mono">#{r.id}</span>
-        <span className="pc-quote__who"><b>{r.name}</b><small>{r.created_at} UTC · {r.category} · {r.items.length} part{r.items.length === 1 ? "" : "s"}</small></span>
-        <span className="pc-quote__total">{r.quoted_total != null ? formatPrice(r.quoted_total) : ""}</span>
-        <span className={`pc-quote__badge pc-quote__badge--${r.status}`}>{QUOTE_LABEL[r.status]}</span>
+        <span className="pc-qr__who"><b>{r.name}</b><small>{r.created_at} UTC · {r.category} · {r.items.length} part{r.items.length === 1 ? "" : "s"}</small></span>
+        <span className="pc-qr__total">{r.quoted_total != null ? formatPrice(r.quoted_total) : ""}</span>
+        <span className={`pc-qr__badge pc-qr__badge--${r.status}`}>{QUOTE_LABEL[r.status]}</span>
       </button>
       {open ? (
-        <div className="pc-quote__body">
-          <div className="pc-quote__contact">
-            {r.phone ? <a className="pc-quote__btn" href={`tel:${r.phone.replace(/[^\d+]/g, "")}`}>Call {r.phone}</a> : null}
-            {mail ? <a className="pc-quote__btn" href={mail} onClick={() => status === "new" && save("contacted")}>Email {r.email}</a> : null}
-            {!r.phone && !r.email ? <span className="pc-muted">No contact info</span> : null}
+        <div className="pc-qr__body">
+          <div className="pc-qr__info">
+            <div className="pc-qr__contact">
+              {r.phone ? <a className="pc-qr__btn" href={`tel:${r.phone.replace(/[^\d+]/g, "")}`}>Call {r.phone}</a> : null}
+              {mail ? <a className="pc-qr__btn" href={mail} onClick={() => status === "new" && save("contacted")}>Email {r.email}</a> : null}
+              {!r.phone && !r.email ? <span className="pc-muted">No contact info</span> : null}
+            </div>
+            {r.items.length ? <ul>{r.items.map((i) => <li key={i}>{i}</li>)}</ul> : null}
+            {r.details ? <p className="pc-qr__details">“{r.details}”</p> : null}
           </div>
-          <div className="pc-quote__grid">
-            <div>
-              <h4>Parts</h4>
-              {r.items.length ? <ul>{r.items.map((i) => <li key={i}>{i}</li>)}</ul> : <p className="pc-muted">None. See details.</p>}
-              <h4>Customer details</h4>
-              <p>{r.details || <span className="pc-muted">None</span>}</p>
+          <div className="pc-qr__manage">
+            <div className="pc-qr__row">
+              <select aria-label="Status" onChange={(e) => setStatus(e.target.value as QuoteStatus)} value={status}>
+                {(Object.keys(QUOTE_LABEL) as QuoteStatus[]).map((k) => <option key={k} value={k}>{QUOTE_LABEL[k]}</option>)}
+              </select>
+              <input aria-label="Quoted total (USD)" inputMode="decimal" onChange={(e) => setTotal(e.target.value)} placeholder="Total $" value={total} />
+              <button disabled={busy || !dirty} onClick={() => save()} type="button">{busy ? "…" : "Save"}</button>
+              <button aria-label={`Delete quote request #${r.id}`} className="pc-qr__del" disabled={busy} onClick={remove} title="Delete" type="button">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>
+              </button>
             </div>
-            <div className="pc-quote__manage">
-              <label>Status
-                <select onChange={(e) => setStatus(e.target.value as QuoteStatus)} value={status}>
-                  {(Object.keys(QUOTE_LABEL) as QuoteStatus[]).map((k) => <option key={k} value={k}>{QUOTE_LABEL[k]}</option>)}
-                </select>
-              </label>
-              <label>Quoted total (USD)
-                <input inputMode="decimal" onChange={(e) => setTotal(e.target.value)} placeholder="e.g. 749.99" value={total} />
-              </label>
-              <label>Private notes
-                <textarea onChange={(e) => setNotes(e.target.value)} placeholder="What you offered, follow-up date, pickup or delivery…" rows={4} value={notes} />
-              </label>
-              <div className="pc-quote__actions">
-                <button disabled={busy || !dirty} onClick={() => save()} type="button">{busy ? "Saving…" : "Save"}</button>
-                <button className="pc-quote__del" disabled={busy} onClick={remove} type="button">Delete</button>
-                {msg ? <span className="pc-muted" role="status">{msg}</span> : null}
-              </div>
-              {r.updated_at !== r.created_at ? <p className="pc-muted pc-quote__upd">Last updated {r.updated_at} UTC</p> : null}
-            </div>
+            <textarea aria-label="Private notes" onChange={(e) => setNotes(e.target.value)} placeholder="Private notes: what you offered, follow-up date…" rows={2} value={notes} />
+            {msg || r.updated_at !== r.created_at ? (
+              <p className="pc-muted pc-qr__upd" role="status">{msg ?? `Updated ${r.updated_at} UTC`}</p>
+            ) : null}
           </div>
         </div>
       ) : null}

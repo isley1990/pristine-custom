@@ -81,7 +81,11 @@ export const adminListProducts = createServerFn({ method: "GET" })
     if (data.status === "out-of-stock") query = query.eq("in_stock", false);
     if (data.status === "featured") query = query.eq("featured", true);
     const q = (data.q ?? "").replace(/[^\p{L}\p{N}\s/.\-]/gu, " ").trim();
-    if (q) query = query.or(`part_number.ilike."%${q}%",name.ilike."%${q}%",brand.ilike."%${q}%"`);
+    if (q) {
+      // Typing a category name ("fenders", "jacks") also finds that whole category.
+      const cats = categories.filter((c) => c.name.toLowerCase().includes(q.toLowerCase())).map((c) => `category.eq.${c.id}`);
+      query = query.or([`part_number.ilike."%${q}%"`, `name.ilike."%${q}%"`, `brand.ilike."%${q}%"`, ...cats].join(","));
+    }
     const from = (data.page - 1) * ADMIN_PAGE;
     const { data: rows, count, error } = await query.order("updated_at", { ascending: false }).range(from, from + ADMIN_PAGE - 1);
     if (error) throw new Error("Could not load products.");
@@ -92,6 +96,15 @@ export const adminListProducts = createServerFn({ method: "GET" })
       pages: Math.max(1, Math.ceil(total / ADMIN_PAGE)),
     };
   });
+
+/** Products per category for the admin filter chips. */
+export const adminCategoryCounts = createServerFn({ method: "GET" }).handler(async () => {
+  requireAdmin();
+  const counts = await Promise.all(
+    categories.map((c) => db().from(T).select("id", { count: "exact", head: true }).eq("category", c.id).then((r) => [c.id, r.count ?? 0] as const)),
+  );
+  return Object.fromEntries(counts) as Record<string, number>;
+});
 
 export const adminStats = createServerFn({ method: "GET" }).handler(async () => {
   requireAdmin();

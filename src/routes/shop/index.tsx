@@ -17,6 +17,8 @@ const search = z.object({
 });
 
 export const Route = createFileRoute("/shop/")({
+  // Served from Vercel's CDN cache for an hour (keyed on the full URL, so search, sort and page stay correct).
+  headers: () => ({ "Vercel-CDN-Cache-Control": "max-age=3600, stale-while-revalidate=86400" }),
   validateSearch: search,
   loaderDeps: ({ search: s }) => ({ q: s.q, page: s.page ?? 1, sort: s.sort ?? "relevance" }),
   loader: async ({ deps }) => {

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { categories, productImage } from "../categories";
 import { checkPassword, endSession, isAdmin, requireAdmin, startSession } from "../admin-auth.server";
 import { db } from "../supabase.server";
+import { productPath, revalidatePages } from "../revalidate.server";
 
 const T = "pristine_products";
 const ADMIN_PAGE = 50;
@@ -155,6 +156,7 @@ export const adminSaveProduct = createServerFn({ method: "POST" })
     if (data.id) {
       const { data: saved, error } = await db().from(T).update(row).eq("id", data.id).select(COLS).single();
       if (error) throw new Error(error.code === "23505" ? "Another product already uses that part number." : "Could not save the product.");
+      await revalidatePages(["/", productPath((saved as { slug: string }).slug)]);
       return { product: withImage(saved as Omit<AdminProduct, "image">) };
     }
     let slug = slugify(data.name);
@@ -162,6 +164,7 @@ export const adminSaveProduct = createServerFn({ method: "POST" })
     if (clash) slug = `${slug}-${data.part_number.toLowerCase().replace(/[^a-z0-9]/g, "")}`;
     const { data: saved, error } = await db().from(T).insert({ ...row, slug }).select(COLS).single();
     if (error) throw new Error(error.code === "23505" ? "Another product already uses that part number." : "Could not create the product.");
+    await revalidatePages(["/"]);
     return { product: withImage(saved as Omit<AdminProduct, "image">) };
   });
 
@@ -169,8 +172,9 @@ export const adminDeleteProduct = createServerFn({ method: "POST" })
   .validator(z.object({ id: z.number().int().positive() }))
   .handler(async ({ data }) => {
     requireAdmin();
-    const { error } = await db().from(T).delete().eq("id", data.id);
+    const { data: gone, error } = await db().from(T).delete().eq("id", data.id).select("slug");
     if (error) throw new Error("Could not delete the product.");
+    await revalidatePages(["/", ...(gone ?? []).map((r) => productPath(r.slug as string))]);
     return { ok: true as const };
   });
 
@@ -188,8 +192,13 @@ export const adminBulkUpdate = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     requireAdmin();
-    const { error } = await db().from(T).update({ ...data.patch, updated_at: new Date().toISOString() }).in("id", data.ids);
+    const { data: rows, error } = await db()
+      .from(T)
+      .update({ ...data.patch, updated_at: new Date().toISOString() })
+      .in("id", data.ids)
+      .select("slug");
     if (error) throw new Error("Could not update the selected products.");
+    await revalidatePages(["/", ...(rows ?? []).map((r) => productPath(r.slug as string))]);
     return { ok: true as const, updated: data.ids.length };
   });
 
@@ -202,6 +211,7 @@ export const adminImportPrices = createServerFn({ method: "POST" })
     let updated = 0;
     const missing: string[] = [];
     const bad: string[] = [];
+    const changed: string[] = [];
     for (const line of lines) {
       const [pnRaw, priceRaw = ""] = line.split(/[,;\t]/);
       const pn = (pnRaw ?? "").trim();
@@ -216,11 +226,15 @@ export const adminImportPrices = createServerFn({ method: "POST" })
         .from(T)
         .update({ price, updated_at: new Date().toISOString() })
         .eq("part_number", pn)
-        .select("id");
+        .select("slug");
       if (error) bad.push(line);
       else if (!rows?.length) missing.push(pn);
-      else updated += 1;
+      else {
+        updated += 1;
+        for (const r of rows) changed.push(productPath(r.slug as string));
+      }
     }
+    await revalidatePages(["/", ...changed]);
     return { updated, missing: missing.slice(0, 50), missingCount: missing.length, bad: bad.slice(0, 20) };
   });
 
